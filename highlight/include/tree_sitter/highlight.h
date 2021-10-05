@@ -64,7 +64,7 @@ TSHighlightError ts_highlighter_highlight(
 
 // TSHighlightBuffer: This struct stores the HTML output of syntax
 // highlighting. It can be reused for multiple highlighting calls.
-TSHighlightBuffer *ts_highlight_buffer_new();
+TSHighlightBuffer *ts_highlight_buffer_new(void);
 
 // Delete a highlight buffer.
 void ts_highlight_buffer_delete(TSHighlightBuffer *);

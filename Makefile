@@ -43,6 +43,9 @@ endif
 
 all: libtree-sitter.a libtree-sitter.$(SOEXTVER)
 
+target/release/libtree_sitter_highlight.a:
+	( cd highlight ; cargo build --release )
+
 libtree-sitter.a: $(OBJ)
 	$(AR) rcs $@ $^
 
@@ -51,7 +54,13 @@ libtree-sitter.$(SOEXTVER): $(OBJ)
 	ln -sf $@ libtree-sitter.$(SOEXT)
 	ln -sf $@ libtree-sitter.$(SOEXTVER_MAJOR)
 
-install: all
+install-highlight: target/release/libtree_sitter_highlight.a
+	install -d '$(DESTDIR)$(LIBDIR)'
+	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
+	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
+	install -m644 highlight/include/tree_sitter/*.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/
+
+install: all install-highlight
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 libtree-sitter.a '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a
 	install -m755 libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER)
