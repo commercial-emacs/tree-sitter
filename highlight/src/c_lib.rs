@@ -1,4 +1,4 @@
-use super::{Error, Highlight, HighlightConfiguration, Highlighter, HtmlRenderer};
+use super::{Error, Highlight, HighlightConfiguration, Highlighter, HtmlRenderer, HighlightEvent};
 use regex::Regex;
 use std::collections::HashMap;
 use std::ffi::CStr;
@@ -8,6 +8,21 @@ use std::sync::atomic::AtomicUsize;
 use std::{fmt, slice, str};
 use tree_sitter::Language;
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct TSHighlightEvent {
+    start: usize,
+    end: usize,
+    index: i32,  // 0 for neither, -1 for HighlightEnd, else HighlightStart
+}
+
+#[repr(C)]
+pub struct TSHighlightEventSlice {
+    arr: *mut TSHighlightEvent,
+    len: usize,
+}
+
+#[repr(C)]
 pub struct TSHighlighter {
     languages: HashMap<String, (Option<Regex>, HighlightConfiguration)>,
     attribute_strings: Vec<&'static [u8]>,
@@ -15,6 +30,7 @@ pub struct TSHighlighter {
     carriage_return_index: Option<usize>,
 }
 
+#[repr(C)]
 pub struct TSHighlightBuffer {
     highlighter: Highlighter,
     renderer: HtmlRenderer,
@@ -167,6 +183,78 @@ pub extern "C" fn ts_highlight_buffer_line_count(this: *const TSHighlightBuffer)
 }
 
 #[no_mangle]
+pub extern "C" fn ts_highlighter_return_highlights(
+    this: *const TSHighlighter,
+    scope_name: *const c_char,
+    source_code: *const c_char,
+    source_code_len: u32,
+    output: *mut TSHighlightBuffer,
+    cancellation_flag: *const AtomicUsize,
+) -> TSHighlightEventSlice {
+    let this = unwrap_ptr(this);
+    let output = unwrap_mut_ptr(output);
+    let scope_name = unwrap(unsafe { CStr::from_ptr(scope_name).to_str() });
+    let source_code =
+        unsafe { slice::from_raw_parts(source_code as *const u8,
+				       source_code_len as usize) };
+    let cancellation_flag = unsafe { cancellation_flag.as_ref() };
+    let highlights = this.highlight_base(
+        source_code,
+        scope_name,
+        &mut output.highlighter,
+        cancellation_flag
+    );
+
+    let mut ts_highlights = Vec::new();
+    if let Ok(highlights) = highlights {
+        for event in highlights {
+            match event {
+                Ok(HighlightEvent::HighlightStart(s)) => {
+                    ts_highlights.push(TSHighlightEvent {
+			start: 0,
+			end: 0,
+			index: s.0 as i32,
+		    });
+                }
+                Ok(HighlightEvent::HighlightEnd) => {
+                    ts_highlights.push(TSHighlightEvent {
+			start: 0,
+			end: 0,
+			index: -1,
+		    });
+                }
+                Ok(HighlightEvent::Source { start, end }) => {
+                    ts_highlights.push(TSHighlightEvent {
+			start: start,
+			end: end,
+			index: 0,
+		    });
+                }
+                Err(_)  => (),
+            }
+        }
+    }
+    let boxed_slice: Box<[TSHighlightEvent]> = ts_highlights.into_boxed_slice();
+    let len = boxed_slice.len();
+    let fat_ptr: *mut [TSHighlightEvent] = Box::into_raw(boxed_slice);
+    let slim_ptr: *mut TSHighlightEvent = fat_ptr as _;
+    TSHighlightEventSlice { arr: slim_ptr, len }
+}
+
+pub unsafe extern "C"
+fn ts_highlighter_free_highlights(
+    TSHighlightEventSlice { arr, len }: TSHighlightEventSlice
+) {
+    if arr.is_null() {
+        return;
+    }
+    let slice: &mut [TSHighlightEvent] =
+        slice::from_raw_parts_mut(arr, len)
+    ;
+    drop(Box::from_raw(slice));
+}
+
+#[no_mangle]
 pub extern "C" fn ts_highlighter_highlight(
     this: *const TSHighlighter,
     scope_name: *const c_char,
@@ -185,21 +273,21 @@ pub extern "C" fn ts_highlighter_highlight(
 }
 
 impl TSHighlighter {
-    fn highlight(
-        &self,
-        source_code: &[u8],
-        scope_name: &str,
-        output: &mut TSHighlightBuffer,
-        cancellation_flag: Option<&AtomicUsize>,
-    ) -> ErrorCode {
+    fn highlight_base<'a>(
+        &'a self,
+        source_code: &'a [u8],
+        scope_name: &'a str,
+        highlighter: &'a mut Highlighter,
+        cancellation_flag: Option<&'a AtomicUsize>,
+    ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
         let entry = self.languages.get(scope_name);
         if entry.is_none() {
-            return ErrorCode::UnknownScope;
+            return Err(Error::InvalidLanguage);
         }
         let (_, configuration) = entry.unwrap();
         let languages = &self.languages;
 
-        let highlights = output.highlighter.highlight(
+        highlighter.highlight(
             configuration,
             source_code,
             cancellation_flag,
@@ -214,30 +302,40 @@ impl TSHighlighter {
                     })
                 })
             },
-        );
+        )
+    }
 
-        if let Ok(highlights) = highlights {
-            output.renderer.reset();
-            output
-                .renderer
-                .set_carriage_return_highlight(self.carriage_return_index.map(Highlight));
-            let result = output
-                .renderer
-                .render(highlights, source_code, &|s| self.attribute_strings[s.0]);
-            match result {
-                Err(Error::Cancelled) => {
-                    return ErrorCode::Timeout;
+    fn highlight(
+        &self,
+        source_code: &[u8],
+        scope_name: &str,
+        output: &mut TSHighlightBuffer,
+        cancellation_flag: Option<&AtomicUsize>,
+    ) -> ErrorCode {
+        let highlights = self.highlight_base(
+            source_code,
+            scope_name,
+            &mut output.highlighter,
+            cancellation_flag
+        );
+        match highlights {
+            Err(Error::InvalidLanguage) => ErrorCode::UnknownScope,
+            Ok(highlights) => {
+                output.renderer.reset();
+                output
+                    .renderer
+                    .set_carriage_return_highlight(self.carriage_return_index.map(Highlight));
+                let result = output
+                    .renderer
+                    .render(highlights, source_code, &|s| self.attribute_strings[s.0]);
+                match result {
+                    Err(Error::Cancelled) => ErrorCode::Timeout,
+                    Err(Error::InvalidLanguage) => ErrorCode::InvalidLanguage,
+                    Err(Error::Unknown) => ErrorCode::Timeout,
+                    Ok(()) => ErrorCode::Ok
                 }
-                Err(Error::InvalidLanguage) => {
-                    return ErrorCode::InvalidLanguage;
-                }
-                Err(Error::Unknown) => {
-                    return ErrorCode::Timeout;
-                }
-                Ok(()) => ErrorCode::Ok,
-            }
-        } else {
-            ErrorCode::Timeout
+            },
+            _ => ErrorCode::Timeout,
         }
     }
 }

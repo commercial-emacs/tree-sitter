@@ -9,10 +9,10 @@ PCLIBDIR ?= $(LIBDIR)/pkgconfig
 # collect sources
 ifneq ($(AMALGAMATED),1)
 	SRC := $(wildcard lib/src/*.c)
-	# do not double-include amalgamation
+# do not double-include amalgamation
 	SRC := $(filter-out lib/src/lib.c,$(SRC))
 else
-	# use amalgamated build
+# use amalgamated build
 	SRC := lib/src/lib.c
 endif
 OBJ := $(SRC:.c=.o)
@@ -43,7 +43,10 @@ endif
 
 all: libtree-sitter.a libtree-sitter.$(SOEXTVER)
 
-target/release/libtree_sitter_highlight.a:
+target/debug/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs
+	( cd highlight ; cargo build )
+
+target/release/libtree_sitter_highlight.a: target/debug/libtree_sitter_highlight.a
 	( cd highlight ; cargo build --release )
 
 libtree-sitter.a: $(OBJ)

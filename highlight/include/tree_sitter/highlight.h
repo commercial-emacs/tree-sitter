@@ -17,8 +17,28 @@ typedef enum {
   TSHighlightInvalidQuery,
 } TSHighlightError;
 
+typedef struct _TSHighlightEvent {
+  uint32_t start;
+  uint32_t end;
+  int32_t index;
+} TSHighlightEvent;
+
+typedef struct _TSHighlightEventSlice {
+  TSHighlightEvent *arr;
+  uint32_t len;
+} TSHighlightEventSlice;
+
 typedef struct TSHighlighter TSHighlighter;
 typedef struct TSHighlightBuffer TSHighlightBuffer;
+
+TSHighlightEventSlice ts_highlighter_return_highlights(
+  const TSHighlighter *self,
+  const char *scope_name,
+  const char *source_code,
+  uint32_t source_code_len,
+  TSHighlightBuffer *output,
+  void *_cancellation_flag
+);
 
 // Construct a `TSHighlighter` by providing a list of strings containing
 // the HTML attributes that should be applied for each highlight value.
