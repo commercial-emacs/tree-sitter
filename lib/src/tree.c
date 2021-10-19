@@ -69,7 +69,6 @@ void ts_tree_edit(TSTree *self, const TSInputEdit *edit) {
       }
     }
   }
-
   SubtreePool pool = ts_subtree_pool_new(0);
   self->root = ts_subtree_edit(self->root, edit, &pool);
   ts_subtree_pool_delete(&pool);

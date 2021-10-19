@@ -133,6 +133,11 @@ impl Highlighter {
         cancellation_flag: Option<&'a AtomicUsize>,
         mut injection_callback: impl FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
+	// HighlightIterLayer::new calls parse on source.
+	// I have and need root tree.  go from beg, then in-order traversal
+	// until end?  Walking tree with cursor using ts_node_start_byte,
+	// ts_node_end_byte.   Or no.  HighlightIterLayer::new takes root tree
+	// runs config.query and cycles captures.
         let layers = HighlightIterLayer::new(
             source,
             self,
@@ -595,6 +600,7 @@ where
             }
         }
     }
+
 
     fn insert_layer(&mut self, mut layer: HighlightIterLayer<'a>) {
         if let Some(sort_key) = layer.sort_key() {

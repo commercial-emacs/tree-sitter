@@ -9,17 +9,24 @@ use std::{fmt, slice, str};
 use tree_sitter::Language;
 
 #[repr(C)]
+pub enum HighlightEventType {
+    HighlightEnd = -2,
+    Source = -1,
+    HighlightStartMinimum = 0,
+}
+
+#[repr(C)]
 #[derive(Copy, Clone)]
 pub struct TSHighlightEvent {
-    start: usize,
-    end: usize,
-    index: i32,  // 0 for neither, -1 for HighlightEnd, else HighlightStart
+    start: u32,
+    end: u32,
+    index: i32,
 }
 
 #[repr(C)]
 pub struct TSHighlightEventSlice {
     arr: *mut TSHighlightEvent,
-    len: usize,
+    len: u32,
 }
 
 #[repr(C)]
@@ -220,14 +227,14 @@ pub extern "C" fn ts_highlighter_return_highlights(
                     ts_highlights.push(TSHighlightEvent {
 			start: 0,
 			end: 0,
-			index: -1,
+			index: HighlightEventType::HighlightEnd as i32,
 		    });
                 }
                 Ok(HighlightEvent::Source { start, end }) => {
                     ts_highlights.push(TSHighlightEvent {
-			start: start,
-			end: end,
-			index: 0,
+			start: start as u32,
+			end: end as u32,
+			index: HighlightEventType::Source as i32,
 		    });
                 }
                 Err(_)  => (),
@@ -235,23 +242,22 @@ pub extern "C" fn ts_highlighter_return_highlights(
         }
     }
     let boxed_slice: Box<[TSHighlightEvent]> = ts_highlights.into_boxed_slice();
-    let len = boxed_slice.len();
+    let len = boxed_slice.len() as u32;
     let fat_ptr: *mut [TSHighlightEvent] = Box::into_raw(boxed_slice);
     let slim_ptr: *mut TSHighlightEvent = fat_ptr as _;
     TSHighlightEventSlice { arr: slim_ptr, len }
 }
 
+#[no_mangle]
 pub unsafe extern "C"
 fn ts_highlighter_free_highlights(
     TSHighlightEventSlice { arr, len }: TSHighlightEventSlice
 ) {
-    if arr.is_null() {
-        return;
+    if !arr.is_null() {
+	let slice: &mut [TSHighlightEvent] =
+            slice::from_raw_parts_mut(arr, len as usize);
+	drop(Box::from_raw(slice));
     }
-    let slice: &mut [TSHighlightEvent] =
-        slice::from_raw_parts_mut(arr, len)
-    ;
-    drop(Box::from_raw(slice));
 }
 
 #[no_mangle]
@@ -286,6 +292,7 @@ impl TSHighlighter {
         }
         let (_, configuration) = entry.unwrap();
         let languages = &self.languages;
+
 
         highlighter.highlight(
             configuration,
