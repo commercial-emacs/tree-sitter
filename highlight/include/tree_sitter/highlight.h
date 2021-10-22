@@ -46,6 +46,16 @@ TSHighlightEventSlice ts_highlighter_return_highlights(
   void *_cancellation_flag
 );
 
+TSHighlightEventSlice ts_highlighter_return_highlights2(
+  const TSHighlighter *self,
+  const char *scope_name,
+  const char *source_code,
+  uint32_t source_code_len,
+  const TSTree *tree,
+  const TSNode *node,
+  TSHighlightBuffer *output
+);
+
 void ts_highlighter_free_highlights(TSHighlightEventSlice);
 
 // Construct a `TSHighlighter` by providing a list of strings containing

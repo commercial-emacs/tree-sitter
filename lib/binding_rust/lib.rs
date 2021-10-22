@@ -43,6 +43,7 @@ pub const PARSER_HEADER: &'static str = include_str!("../include/tree_sitter/par
 pub struct Language(*const ffi::TSLanguage);
 
 /// A tree that represents the syntactic structure of a source code file.
+#[repr(transparent)]
 pub struct Tree(NonNull<ffi::TSTree>);
 
 /// A position in a multi-line text document, in terms of rows and columns.

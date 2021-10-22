@@ -43,10 +43,10 @@ endif
 
 all: libtree-sitter.a libtree-sitter.$(SOEXTVER)
 
-target/debug/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs
+target/debug/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
 	( cd highlight ; cargo build )
 
-target/release/libtree_sitter_highlight.a: target/debug/libtree_sitter_highlight.a
+target/release/libtree_sitter_highlight.a: target/debug/libtree_sitter_highlight.a lib/binding_rust/lib.rs
 	( cd highlight ; cargo build --release )
 
 libtree-sitter.a: $(OBJ)

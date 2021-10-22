@@ -125,6 +125,41 @@ impl Highlighter {
         &mut self.parser
     }
 
+    pub fn highlight2<'a>(
+        &'a mut self,
+        config: &'a HighlightConfiguration,
+        source: &'a [u8],
+        tree: &Tree,
+        node: &'a Node
+    ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
+	// HighlightIterLayer::new calls parse on source.  I have and
+	// need root tree.  1. casouri go from beg, then in-order
+	// traversal until end?  Walking tree with cursor using
+	// ts_node_start_byte, ts_node_end_byte.  Or 2.
+	// HighlightIterLayer::new takes root tree runs config.query
+	// and cycles captures.
+	// Do 1. casouri for now.
+        let layers = HighlightIterLayer::new2(
+	    source,
+	    tree,
+            node,
+            self,
+            config,
+        )?;
+        assert_ne!(layers.len(), 0);
+        Ok(HighlightIter {
+            source,
+            byte_offset: 0,
+            injection_callback: move |_| { None },
+	    cancellation_flag: None,
+            highlighter: self,
+            iter_count: 0,
+            layers: layers,
+            next_event: None,
+            last_highlight_range: None,
+        })
+    }
+
     /// Iterate over the highlighted regions for a given slice of source code.
     pub fn highlight<'a>(
         &'a mut self,
@@ -430,7 +465,50 @@ impl<'a> HighlightIterLayer<'a> {
                 ranges = next_ranges;
             }
         }
+        Ok(result)
+    }
 
+    fn new2(
+        source: &'a [u8],
+	tree: &Tree,
+        node: &'a Node,
+        highlighter: &mut Highlighter,
+        config: &'a HighlightConfiguration,
+    ) -> Result<Vec<Self>, Error> {
+        let mut result = Vec::with_capacity(1);
+        highlighter
+            .parser
+            .set_language(config.language)
+            .map_err(|_| Error::InvalidLanguage)?;
+
+        let mut cursor = highlighter.cursors.pop().unwrap_or(QueryCursor::new());
+
+        // The `captures` iterator borrows the `QueryCursor`, which
+        // prevents it from being moved.
+        let cursor_ref =
+            unsafe { mem::transmute::<_, &'static mut QueryCursor>(&mut cursor) };
+        let captures = cursor_ref
+            .captures(&config.query, *node, source)
+            .peekable();
+        result.push(HighlightIterLayer {
+            highlight_end_stack: Vec::new(),
+            scope_stack: vec![LocalScope {
+                inherits: false,
+                range: 0..usize::MAX,
+                local_defs: Vec::new(),
+            }],
+            cursor,
+            depth: 0,
+            _tree: tree.clone(),
+            captures,
+            config,
+	    ranges: vec![Range {
+		start_byte: 0,
+		end_byte: usize::MAX,
+		start_point: Point::new(0, 0),
+		end_point: Point::new(usize::MAX, usize::MAX),
+            }],
+        });
         Ok(result)
     }
 
@@ -600,7 +678,6 @@ where
             }
         }
     }
-
 
     fn insert_layer(&mut self, mut layer: HighlightIterLayer<'a>) {
         if let Some(sort_key) = layer.sort_key() {

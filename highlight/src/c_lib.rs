@@ -7,6 +7,8 @@ use std::process::abort;
 use std::sync::atomic::AtomicUsize;
 use std::{fmt, slice, str};
 use tree_sitter::Language;
+use tree_sitter::Tree;
+use tree_sitter::Node;
 
 #[repr(C)]
 pub enum HighlightEventType {
@@ -190,6 +192,65 @@ pub extern "C" fn ts_highlight_buffer_line_count(this: *const TSHighlightBuffer)
 }
 
 #[no_mangle]
+pub extern "C" fn ts_highlighter_return_highlights2(
+    this: *const TSHighlighter,
+    scope_name: *const c_char,
+    source_code: *const c_char,
+    source_code_len: u32,
+    tree: &Tree,
+    node: &Node,
+    output: *mut TSHighlightBuffer,
+) -> TSHighlightEventSlice {
+    let this = unwrap_ptr(this);
+    let output = unwrap_mut_ptr(output);
+    let scope_name = unwrap(unsafe { CStr::from_ptr(scope_name).to_str() });
+    let source_code =
+        unsafe { slice::from_raw_parts(source_code as *const u8,
+				       source_code_len as usize) };
+    let highlights = this.highlight_base2(
+	source_code,
+        scope_name,
+	tree,
+        node,
+        &mut output.highlighter,
+    );
+    let mut ts_highlights = Vec::new();
+    if let Ok(highlights) = highlights {
+        for event in highlights {
+            match event {
+                Ok(HighlightEvent::HighlightStart(s)) => {
+                    ts_highlights.push(TSHighlightEvent {
+			start: 0,
+			end: 0,
+			index: s.0 as i32,
+		    });
+                }
+                Ok(HighlightEvent::HighlightEnd) => {
+                    ts_highlights.push(TSHighlightEvent {
+			start: 0,
+			end: 0,
+			index: HighlightEventType::HighlightEnd as i32,
+		    });
+                }
+                Ok(HighlightEvent::Source { start, end }) => {
+                    ts_highlights.push(TSHighlightEvent {
+			start: start as u32,
+			end: end as u32,
+			index: HighlightEventType::Source as i32,
+		    });
+                }
+                Err(_)  => (),
+            }
+        }
+    }
+    let boxed_slice: Box<[TSHighlightEvent]> = ts_highlights.into_boxed_slice();
+    let len = boxed_slice.len() as u32;
+    let fat_ptr: *mut [TSHighlightEvent] = Box::into_raw(boxed_slice);
+    let slim_ptr: *mut TSHighlightEvent = fat_ptr as _;
+    TSHighlightEventSlice { arr: slim_ptr, len }
+}
+
+#[no_mangle]
 pub extern "C" fn ts_highlighter_return_highlights(
     this: *const TSHighlighter,
     scope_name: *const c_char,
@@ -279,6 +340,28 @@ pub extern "C" fn ts_highlighter_highlight(
 }
 
 impl TSHighlighter {
+    fn highlight_base2<'a>(
+        &'a self,
+        source_code: &'a [u8],
+        scope_name: &'a str,
+	tree: &Tree,
+        node: &'a Node,
+        highlighter: &'a mut Highlighter,
+    ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
+        let entry = self.languages.get(scope_name);
+        if entry.is_none() {
+            return Err(Error::InvalidLanguage);
+        }
+        let (_, configuration) = entry.unwrap();
+
+        highlighter.highlight2(
+            configuration,
+	    source_code,
+	    tree,
+            node,
+        )
+    }
+
     fn highlight_base<'a>(
         &'a self,
         source_code: &'a [u8],
@@ -292,7 +375,6 @@ impl TSHighlighter {
         }
         let (_, configuration) = entry.unwrap();
         let languages = &self.languages;
-
 
         highlighter.highlight(
             configuration,
