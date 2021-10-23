@@ -2,13 +2,19 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
-    tags:
-      - v*
+    paths-ignore:
+    - '**.rst'
+    - '**.org'
+    - '**.texi'
+    - '**.info'
+    - 'ChangeLog.**'
+    branches-ignore:
+    - 'master'
+    - 'main'
+
   pull_request:
     branches:
-      - "**"
+    - "**"
 
 env:
   CARGO_TERM_COLOR: always
