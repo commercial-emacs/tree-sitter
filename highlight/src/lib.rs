@@ -125,7 +125,7 @@ impl Highlighter {
         &mut self.parser
     }
 
-    pub fn highlight2<'a>(
+    pub fn highlight_preparsed<'a>(
         &'a mut self,
         config: &'a HighlightConfiguration,
         source: &'a [u8],
@@ -139,7 +139,7 @@ impl Highlighter {
         // HighlightIterLayer::new takes root tree runs config.query
         // and cycles captures.
         // Do 1. casouri for now.
-        let layers = HighlightIterLayer::new2(source, tree, node, self, config)?;
+        let layers = HighlightIterLayer::preparsed(source, tree, node, self, config)?;
         assert_ne!(layers.len(), 0);
         Ok(HighlightIter {
             source,
@@ -462,7 +462,7 @@ impl<'a> HighlightIterLayer<'a> {
         Ok(result)
     }
 
-    fn new2(
+    fn preparsed(
         source: &'a [u8],
         tree: &Tree,
         node: &'a Node,

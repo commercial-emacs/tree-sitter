@@ -42,15 +42,6 @@ TSHighlightEventSlice ts_highlighter_return_highlights(
   const char *scope_name,
   const char *source_code,
   uint32_t source_code_len,
-  TSHighlightBuffer *output,
-  void *_cancellation_flag
-);
-
-TSHighlightEventSlice ts_highlighter_return_highlights2(
-  const TSHighlighter *self,
-  const char *scope_name,
-  const char *source_code,
-  uint32_t source_code_len,
   const TSTree *tree,
   const TSNode *node,
   TSHighlightBuffer *output

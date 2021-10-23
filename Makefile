@@ -71,6 +71,7 @@ install-highlight: target/release/libtree_sitter_highlight.a
 	install -m644 highlight/include/tree_sitter/*.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/
 
 install: all install-highlight
+	cargo fmt -- --check
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 libtree-sitter.a '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a
 	install -m755 libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER)
