@@ -1,10 +1,17 @@
-VERSION := 0.6.3
+VERSION := 0.6.3alpha
 
-# install directory layout
-PREFIX ?= /usr/local
-INCLUDEDIR ?= $(PREFIX)/include
-LIBDIR ?= $(PREFIX)/lib
-PCLIBDIR ?= $(LIBDIR)/pkgconfig
+LIBDIR ?= $(shell \
+  if 1>/dev/null which systemd-path ; then \
+    systemd-path user-library-private ; \
+  elif [ ! -z "$(XDG_DATA_HOME)" ] ; then \
+    echo "$(XDG_DATA_HOME)/../lib" ; \
+  elif [ -d "$(HOME)/.local" ] ; then \
+    echo "$(HOME)/.local/lib" ; \
+  else echo "/usr/local/lib" ; \
+  fi)
+PREFIX := $(shell dirname $(LIBDIR))
+INCLUDEDIR := $(PREFIX)/include
+PCLIBDIR := $(LIBDIR)/pkgconfig
 
 # collect sources
 ifneq ($(AMALGAMATED),1)
@@ -76,6 +83,7 @@ install: all install-highlight
 	    -e 's|=$(PREFIX)|=$${prefix}|' \
 	    -e 's|@PREFIX@|$(PREFIX)|' \
 	    tree-sitter.pc.in > '$(DESTDIR)$(PCLIBDIR)'/tree-sitter.pc
+	pkg-config --exact-version=$(VERSION) tree-sitter
 
 clean:
 	rm -f lib/src/*.o libtree-sitter.a libtree-sitter.$(SOEXT) libtree-sitter.$(SOEXTVER_MAJOR) libtree-sitter.$(SOEXTVER)
