@@ -130,28 +130,22 @@ impl Highlighter {
         config: &'a HighlightConfiguration,
         source: &'a [u8],
         tree: &Tree,
-        node: &'a Node
+        node: &'a Node,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
-	// HighlightIterLayer::new calls parse on source.  I have and
-	// need root tree.  1. casouri go from beg, then in-order
-	// traversal until end?  Walking tree with cursor using
-	// ts_node_start_byte, ts_node_end_byte.  Or 2.
-	// HighlightIterLayer::new takes root tree runs config.query
-	// and cycles captures.
-	// Do 1. casouri for now.
-        let layers = HighlightIterLayer::new2(
-	    source,
-	    tree,
-            node,
-            self,
-            config,
-        )?;
+        // HighlightIterLayer::new calls parse on source.  I have and
+        // need root tree.  1. casouri go from beg, then in-order
+        // traversal until end?  Walking tree with cursor using
+        // ts_node_start_byte, ts_node_end_byte.  Or 2.
+        // HighlightIterLayer::new takes root tree runs config.query
+        // and cycles captures.
+        // Do 1. casouri for now.
+        let layers = HighlightIterLayer::new2(source, tree, node, self, config)?;
         assert_ne!(layers.len(), 0);
         Ok(HighlightIter {
             source,
             byte_offset: 0,
-            injection_callback: move |_| { None },
-	    cancellation_flag: None,
+            injection_callback: move |_| None,
+            cancellation_flag: None,
             highlighter: self,
             iter_count: 0,
             layers: layers,
@@ -168,11 +162,11 @@ impl Highlighter {
         cancellation_flag: Option<&'a AtomicUsize>,
         mut injection_callback: impl FnMut(&str) -> Option<&'a HighlightConfiguration> + 'a,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
-	// HighlightIterLayer::new calls parse on source.
-	// I have and need root tree.  go from beg, then in-order traversal
-	// until end?  Walking tree with cursor using ts_node_start_byte,
-	// ts_node_end_byte.   Or no.  HighlightIterLayer::new takes root tree
-	// runs config.query and cycles captures.
+        // HighlightIterLayer::new calls parse on source.
+        // I have and need root tree.  go from beg, then in-order traversal
+        // until end?  Walking tree with cursor using ts_node_start_byte,
+        // ts_node_end_byte.   Or no.  HighlightIterLayer::new takes root tree
+        // runs config.query and cycles captures.
         let layers = HighlightIterLayer::new(
             source,
             self,
@@ -470,7 +464,7 @@ impl<'a> HighlightIterLayer<'a> {
 
     fn new2(
         source: &'a [u8],
-	tree: &Tree,
+        tree: &Tree,
         node: &'a Node,
         highlighter: &mut Highlighter,
         config: &'a HighlightConfiguration,
@@ -485,11 +479,8 @@ impl<'a> HighlightIterLayer<'a> {
 
         // The `captures` iterator borrows the `QueryCursor`, which
         // prevents it from being moved.
-        let cursor_ref =
-            unsafe { mem::transmute::<_, &'static mut QueryCursor>(&mut cursor) };
-        let captures = cursor_ref
-            .captures(&config.query, *node, source)
-            .peekable();
+        let cursor_ref = unsafe { mem::transmute::<_, &'static mut QueryCursor>(&mut cursor) };
+        let captures = cursor_ref.captures(&config.query, *node, source).peekable();
         result.push(HighlightIterLayer {
             highlight_end_stack: Vec::new(),
             scope_stack: vec![LocalScope {
@@ -502,11 +493,11 @@ impl<'a> HighlightIterLayer<'a> {
             _tree: tree.clone(),
             captures,
             config,
-	    ranges: vec![Range {
-		start_byte: 0,
-		end_byte: usize::MAX,
-		start_point: Point::new(0, 0),
-		end_point: Point::new(usize::MAX, usize::MAX),
+            ranges: vec![Range {
+                start_byte: 0,
+                end_byte: usize::MAX,
+                start_point: Point::new(0, 0),
+                end_point: Point::new(usize::MAX, usize::MAX),
             }],
         });
         Ok(result)

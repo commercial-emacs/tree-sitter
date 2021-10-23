@@ -1,4 +1,4 @@
-use super::{Error, Highlight, HighlightConfiguration, Highlighter, HtmlRenderer, HighlightEvent};
+use super::{Error, Highlight, HighlightConfiguration, HighlightEvent, Highlighter, HtmlRenderer};
 use regex::Regex;
 use std::collections::HashMap;
 use std::ffi::CStr;
@@ -7,8 +7,8 @@ use std::process::abort;
 use std::sync::atomic::AtomicUsize;
 use std::{fmt, slice, str};
 use tree_sitter::Language;
-use tree_sitter::Tree;
 use tree_sitter::Node;
+use tree_sitter::Tree;
 
 #[repr(C)]
 pub enum HighlightEventType {
@@ -205,41 +205,35 @@ pub extern "C" fn ts_highlighter_return_highlights2(
     let output = unwrap_mut_ptr(output);
     let scope_name = unwrap(unsafe { CStr::from_ptr(scope_name).to_str() });
     let source_code =
-        unsafe { slice::from_raw_parts(source_code as *const u8,
-				       source_code_len as usize) };
-    let highlights = this.highlight_base2(
-	source_code,
-        scope_name,
-	tree,
-        node,
-        &mut output.highlighter,
-    );
+        unsafe { slice::from_raw_parts(source_code as *const u8, source_code_len as usize) };
+    let highlights =
+        this.highlight_base2(source_code, scope_name, tree, node, &mut output.highlighter);
     let mut ts_highlights = Vec::new();
     if let Ok(highlights) = highlights {
         for event in highlights {
             match event {
                 Ok(HighlightEvent::HighlightStart(s)) => {
                     ts_highlights.push(TSHighlightEvent {
-			start: 0,
-			end: 0,
-			index: s.0 as i32,
-		    });
+                        start: 0,
+                        end: 0,
+                        index: s.0 as i32,
+                    });
                 }
                 Ok(HighlightEvent::HighlightEnd) => {
                     ts_highlights.push(TSHighlightEvent {
-			start: 0,
-			end: 0,
-			index: HighlightEventType::HighlightEnd as i32,
-		    });
+                        start: 0,
+                        end: 0,
+                        index: HighlightEventType::HighlightEnd as i32,
+                    });
                 }
                 Ok(HighlightEvent::Source { start, end }) => {
                     ts_highlights.push(TSHighlightEvent {
-			start: start as u32,
-			end: end as u32,
-			index: HighlightEventType::Source as i32,
-		    });
+                        start: start as u32,
+                        end: end as u32,
+                        index: HighlightEventType::Source as i32,
+                    });
                 }
-                Err(_)  => (),
+                Err(_) => (),
             }
         }
     }
@@ -263,14 +257,13 @@ pub extern "C" fn ts_highlighter_return_highlights(
     let output = unwrap_mut_ptr(output);
     let scope_name = unwrap(unsafe { CStr::from_ptr(scope_name).to_str() });
     let source_code =
-        unsafe { slice::from_raw_parts(source_code as *const u8,
-				       source_code_len as usize) };
+        unsafe { slice::from_raw_parts(source_code as *const u8, source_code_len as usize) };
     let cancellation_flag = unsafe { cancellation_flag.as_ref() };
     let highlights = this.highlight_base(
         source_code,
         scope_name,
         &mut output.highlighter,
-        cancellation_flag
+        cancellation_flag,
     );
 
     let mut ts_highlights = Vec::new();
@@ -279,26 +272,26 @@ pub extern "C" fn ts_highlighter_return_highlights(
             match event {
                 Ok(HighlightEvent::HighlightStart(s)) => {
                     ts_highlights.push(TSHighlightEvent {
-			start: 0,
-			end: 0,
-			index: s.0 as i32,
-		    });
+                        start: 0,
+                        end: 0,
+                        index: s.0 as i32,
+                    });
                 }
                 Ok(HighlightEvent::HighlightEnd) => {
                     ts_highlights.push(TSHighlightEvent {
-			start: 0,
-			end: 0,
-			index: HighlightEventType::HighlightEnd as i32,
-		    });
+                        start: 0,
+                        end: 0,
+                        index: HighlightEventType::HighlightEnd as i32,
+                    });
                 }
                 Ok(HighlightEvent::Source { start, end }) => {
                     ts_highlights.push(TSHighlightEvent {
-			start: start as u32,
-			end: end as u32,
-			index: HighlightEventType::Source as i32,
-		    });
+                        start: start as u32,
+                        end: end as u32,
+                        index: HighlightEventType::Source as i32,
+                    });
                 }
-                Err(_)  => (),
+                Err(_) => (),
             }
         }
     }
@@ -310,14 +303,12 @@ pub extern "C" fn ts_highlighter_return_highlights(
 }
 
 #[no_mangle]
-pub unsafe extern "C"
-fn ts_highlighter_free_highlights(
-    TSHighlightEventSlice { arr, len }: TSHighlightEventSlice
+pub unsafe extern "C" fn ts_highlighter_free_highlights(
+    TSHighlightEventSlice { arr, len }: TSHighlightEventSlice,
 ) {
     if !arr.is_null() {
-	let slice: &mut [TSHighlightEvent] =
-            slice::from_raw_parts_mut(arr, len as usize);
-	drop(Box::from_raw(slice));
+        let slice: &mut [TSHighlightEvent] = slice::from_raw_parts_mut(arr, len as usize);
+        drop(Box::from_raw(slice));
     }
 }
 
@@ -344,7 +335,7 @@ impl TSHighlighter {
         &'a self,
         source_code: &'a [u8],
         scope_name: &'a str,
-	tree: &Tree,
+        tree: &Tree,
         node: &'a Node,
         highlighter: &'a mut Highlighter,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
@@ -353,13 +344,7 @@ impl TSHighlighter {
             return Err(Error::InvalidLanguage);
         }
         let (_, configuration) = entry.unwrap();
-
-        highlighter.highlight2(
-            configuration,
-	    source_code,
-	    tree,
-            node,
-        )
+        highlighter.highlight2(configuration, source_code, tree, node)
     }
 
     fn highlight_base<'a>(
@@ -405,7 +390,7 @@ impl TSHighlighter {
             source_code,
             scope_name,
             &mut output.highlighter,
-            cancellation_flag
+            cancellation_flag,
         );
         match highlights {
             Err(Error::InvalidLanguage) => ErrorCode::UnknownScope,
@@ -421,9 +406,9 @@ impl TSHighlighter {
                     Err(Error::Cancelled) => ErrorCode::Timeout,
                     Err(Error::InvalidLanguage) => ErrorCode::InvalidLanguage,
                     Err(Error::Unknown) => ErrorCode::Timeout,
-                    Ok(()) => ErrorCode::Ok
+                    Ok(()) => ErrorCode::Ok,
                 }
-            },
+            }
             _ => ErrorCode::Timeout,
         }
     }

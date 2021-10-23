@@ -657,7 +657,7 @@ code
 ---
 
 ; Line start comment
-(a 
+(a
 ; ignore this
     (b)
     ; also ignore this
@@ -755,9 +755,9 @@ NOT A TEST HEADER
         );
 
         let expected_input = "\n=========================\n\
-            NOT A TEST HEADER\n\
-            =========================\n\
-            -------------------------\n"
+                              NOT A TEST HEADER\n\
+                              =========================\n\
+                              -------------------------\n"
             .as_bytes()
             .to_vec();
         assert_eq!(
