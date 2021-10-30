@@ -8,7 +8,6 @@ use std::sync::atomic::AtomicUsize;
 use std::{fmt, slice, str};
 use tree_sitter::Language;
 use tree_sitter::Node;
-use tree_sitter::Tree;
 
 #[repr(C)]
 pub enum HighlightEventType {
@@ -197,7 +196,6 @@ pub extern "C" fn ts_highlighter_return_highlights(
     scope_name: *const c_char,
     source_code: *const c_char,
     source_code_len: u32,
-    tree: &Tree,
     node: &Node,
     output: *mut TSHighlightBuffer,
 ) -> TSHighlightEventSlice {
@@ -207,7 +205,7 @@ pub extern "C" fn ts_highlighter_return_highlights(
     let source_code =
         unsafe { slice::from_raw_parts(source_code as *const u8, source_code_len as usize) };
     let highlights =
-        this.highlight_preparsed(source_code, scope_name, tree, node, &mut output.highlighter);
+        this.highlight_preparsed(source_code, scope_name, node, &mut output.highlighter);
     let mut ts_highlights = Vec::new();
     if let Ok(highlights) = highlights {
         for event in highlights {
@@ -277,7 +275,6 @@ impl TSHighlighter {
         &'a self,
         source_code: &'a [u8],
         scope_name: &'a str,
-        tree: &Tree,
         node: &'a Node,
         highlighter: &'a mut Highlighter,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
@@ -286,7 +283,7 @@ impl TSHighlighter {
             return Err(Error::InvalidLanguage);
         }
         let (_, configuration) = entry.unwrap();
-        highlighter.highlight_preparsed(configuration, source_code, tree, node)
+        highlighter.highlight_preparsed(configuration, source_code, node)
     }
 
     fn highlight_base<'a>(

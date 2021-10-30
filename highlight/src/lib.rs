@@ -103,7 +103,7 @@ where
 }
 
 struct HighlightIterLayer<'a> {
-    _tree: Tree,
+    _tree: Option<Tree>,
     cursor: QueryCursor,
     captures: iter::Peekable<QueryCaptures<'a, 'a, &'a [u8]>>,
     config: &'a HighlightConfiguration,
@@ -129,7 +129,6 @@ impl Highlighter {
         &'a mut self,
         config: &'a HighlightConfiguration,
         source: &'a [u8],
-        tree: &Tree,
         node: &'a Node,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
         // HighlightIterLayer::new calls parse on source.  I have and
@@ -139,7 +138,7 @@ impl Highlighter {
         // HighlightIterLayer::new takes root tree runs config.query
         // and cycles captures.
         // Do 1. casouri for now.
-        let layers = HighlightIterLayer::preparsed(source, tree, node, self, config)?;
+        let layers = HighlightIterLayer::preparsed(source, node, self, config)?;
         assert_ne!(layers.len(), 0);
         Ok(HighlightIter {
             source,
@@ -443,7 +442,7 @@ impl<'a> HighlightIterLayer<'a> {
                     }],
                     cursor,
                     depth,
-                    _tree: tree,
+                    _tree: Some(tree),
                     captures,
                     config,
                     ranges,
@@ -464,7 +463,6 @@ impl<'a> HighlightIterLayer<'a> {
 
     fn preparsed(
         source: &'a [u8],
-        tree: &Tree,
         node: &'a Node,
         highlighter: &mut Highlighter,
         config: &'a HighlightConfiguration,
@@ -490,7 +488,7 @@ impl<'a> HighlightIterLayer<'a> {
             }],
             cursor,
             depth: 0,
-            _tree: tree.clone(),
+            _tree: None,
             captures,
             config,
             ranges: vec![Range {

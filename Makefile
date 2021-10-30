@@ -64,7 +64,7 @@ libtree-sitter.$(SOEXTVER): $(OBJ)
 	ln -sf $@ libtree-sitter.$(SOEXT)
 	ln -sf $@ libtree-sitter.$(SOEXTVER_MAJOR)
 
-install-highlight: target/release/libtree_sitter_highlight.a
+install-highlight: target/debug/libtree_sitter_highlight.a
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
 	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
