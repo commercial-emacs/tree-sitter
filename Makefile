@@ -82,7 +82,6 @@ install-grammars: install-cli
 
 .PHONY: install-ci
 install-ci: all install-highlight
-	cargo fmt -- --check
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 libtree-sitter.a '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a
 	install -m755 libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER)
@@ -102,4 +101,4 @@ install: install-ci install-grammars
 
 .PHONY: clean
 clean:
-	rm -f lib/src/*.o libtree-sitter.a libtree-sitter.$(SOEXT) libtree-sitter.$(SOEXTVER_MAJOR) libtree-sitter.$(SOEXTVER)
+	rm -rf lib/src/*.o libtree-sitter.a libtree-sitter.$(SOEXT) libtree-sitter.$(SOEXTVER_MAJOR) libtree-sitter.$(SOEXTVER) grammars

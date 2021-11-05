@@ -231,8 +231,7 @@ fn run() -> Result<()> {
                 .about("Print info about all known language parsers"),
         )
         .subcommand(
-            SubCommand::with_name("dump-libpath")
-                .about("Where are my language libraries at?"),
+            SubCommand::with_name("dump-libpath").about("Where are my language libraries at?"),
         )
         .get_matches();
 
@@ -252,10 +251,7 @@ fn run() -> Result<()> {
             config.add(tree_sitter_loader::Config::initial())?;
             config.add(tree_sitter_cli::highlight::ThemeConfig::default())?;
             config.save()?;
-            println!(
-                "Saved initial configuration to {}",
-                config.location.display()
-            );
+            println!(concat!("{}",), loader.parser_lib_path(),);
         }
 
         ("generate", Some(matches)) => {
@@ -535,12 +531,7 @@ fn run() -> Result<()> {
         }
 
         ("dump-libpath", Some(_)) => {
-            println!(
-                concat!(
-                    "{}",
-                ),
-                loader.parser_lib_path(),
-            );
+            println!(concat!("{}",), loader.parser_lib_path(),);
         }
 
         _ => unreachable!(),

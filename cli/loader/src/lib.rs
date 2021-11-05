@@ -3,6 +3,7 @@ use libloading::{Library, Symbol};
 use once_cell::unsync::OnceCell;
 use regex::{Regex, RegexBuilder};
 use serde::{Deserialize, Deserializer, Serialize};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::BufReader;
 use std::ops::Range;
@@ -11,7 +12,6 @@ use std::process::Command;
 use std::sync::Mutex;
 use std::time::SystemTime;
 use std::{fs, mem};
-use std::borrow::Cow;
 use tree_sitter::{Language, QueryError, QueryErrorKind};
 use tree_sitter_highlight::HighlightConfiguration;
 use tree_sitter_tags::{Error as TagsError, TagsConfiguration};
@@ -662,9 +662,7 @@ impl Loader {
         self.debug_build = flag;
     }
 
-    pub fn parser_lib_path<'a>(
-        &'a self,
-    ) -> Cow<'a, str> {
+    pub fn parser_lib_path<'a>(&'a self) -> Cow<'a, str> {
         self.parser_lib_path.to_string_lossy()
     }
 }
