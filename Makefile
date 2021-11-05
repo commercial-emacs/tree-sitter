@@ -80,8 +80,8 @@ install-cli:
 install-grammars: install-cli
 	bash install-grammars.sh
 
-.PHONY: install
-install: all install-highlight install-cli
+.PHONY: install-ci
+install-ci: all install-highlight
 	cargo fmt -- --check
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 libtree-sitter.a '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a
@@ -96,6 +96,9 @@ install: all install-highlight install-cli
 	    -e 's|@PREFIX@|$(PREFIX)|' \
 	    tree-sitter.pc.in > '$(DESTDIR)$(PCLIBDIR)'/tree-sitter.pc
 	pkg-config --exact-version=$(VERSION) tree-sitter
+
+.PHONY: install
+install: install-ci install-grammars
 
 .PHONY: clean
 clean:
