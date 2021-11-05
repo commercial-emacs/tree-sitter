@@ -48,6 +48,7 @@ ifneq (,$(filter $(shell uname),FreeBSD NetBSD DragonFly))
 	PCLIBDIR := $(PREFIX)/libdata/pkgconfig
 endif
 
+.PHONY: all
 all: libtree-sitter.a libtree-sitter.$(SOEXTVER)
 
 target/debug/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
@@ -64,13 +65,23 @@ libtree-sitter.$(SOEXTVER): $(OBJ)
 	ln -sf $@ libtree-sitter.$(SOEXT)
 	ln -sf $@ libtree-sitter.$(SOEXTVER_MAJOR)
 
+.PHONY: install-highlight
 install-highlight: target/release/libtree_sitter_highlight.a
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
 	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
 	install -m644 highlight/include/tree_sitter/*.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/
 
-install: all install-highlight
+.PHONY: install-cli
+install-cli:
+	cd cli ; cargo install --path .
+
+.PHONY: install-grammars
+install-grammars: install-cli
+	bash install-grammars.sh
+
+.PHONY: install
+install: all install-highlight install-cli
 	cargo fmt -- --check
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 libtree-sitter.a '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a
@@ -86,7 +97,6 @@ install: all install-highlight
 	    tree-sitter.pc.in > '$(DESTDIR)$(PCLIBDIR)'/tree-sitter.pc
 	pkg-config --exact-version=$(VERSION) tree-sitter
 
+.PHONY: clean
 clean:
 	rm -f lib/src/*.o libtree-sitter.a libtree-sitter.$(SOEXT) libtree-sitter.$(SOEXTVER_MAJOR) libtree-sitter.$(SOEXTVER)
-
-.PHONY: all install clean

@@ -230,6 +230,10 @@ fn run() -> Result<()> {
             SubCommand::with_name("dump-languages")
                 .about("Print info about all known language parsers"),
         )
+        .subcommand(
+            SubCommand::with_name("dump-libpath")
+                .about("Where are my language libraries at?"),
+        )
         .get_matches();
 
     let current_dir = env::current_dir().unwrap();
@@ -528,6 +532,15 @@ fn run() -> Result<()> {
                     configuration.injection_regex,
                 );
             }
+        }
+
+        ("dump-libpath", Some(_)) => {
+            println!(
+                concat!(
+                    "{}",
+                ),
+                loader.parser_lib_path(),
+            );
         }
 
         _ => unreachable!(),

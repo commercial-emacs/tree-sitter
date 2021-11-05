@@ -11,6 +11,7 @@ use std::process::Command;
 use std::sync::Mutex;
 use std::time::SystemTime;
 use std::{fs, mem};
+use std::borrow::Cow;
 use tree_sitter::{Language, QueryError, QueryErrorKind};
 use tree_sitter_highlight::HighlightConfiguration;
 use tree_sitter_tags::{Error as TagsError, TagsConfiguration};
@@ -659,6 +660,12 @@ impl Loader {
 
     pub fn use_debug_build(&mut self, flag: bool) {
         self.debug_build = flag;
+    }
+
+    pub fn parser_lib_path<'a>(
+        &'a self,
+    ) -> Cow<'a, str> {
+        self.parser_lib_path.to_string_lossy()
     }
 }
 
