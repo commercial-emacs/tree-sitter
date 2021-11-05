@@ -5,6 +5,7 @@ log*.html
 .vscode
 
 fuzz-results
+grammars
 
 test/fixtures/grammars/*
 !test/fixtures/grammars/.gitkeep
