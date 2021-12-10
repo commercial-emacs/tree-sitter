@@ -72,6 +72,13 @@ install-highlight: target/release/libtree_sitter_highlight.a
 	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
 	install -m644 highlight/include/tree_sitter/*.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/
 
+.PHONY: install-highlight-debug
+install-highlight-debug: target/debug/libtree_sitter_highlight.a
+	install -d '$(DESTDIR)$(LIBDIR)'
+	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
+	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
+	install -m644 highlight/include/tree_sitter/*.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/
+
 .PHONY: install-cli
 install-cli:
 	cd cli ; cargo install --path .
