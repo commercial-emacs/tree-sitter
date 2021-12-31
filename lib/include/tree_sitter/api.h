@@ -397,6 +397,11 @@ TSRange *ts_tree_get_changed_ranges(
  */
 void ts_tree_print_dot_graph(const TSTree *, FILE *);
 
+/**
+ * Get the s-expr depth of byte.
+ */
+size_t ts_tree_depth_for_byte(const TSTree *, uint32_t);
+
 /******************/
 /* Section - Node */
 /******************/
@@ -906,10 +911,10 @@ uint32_t ts_language_version(const TSLanguage *);
  * By default, Tree-sitter uses the standard libc allocation functions,
  * but aborts the process when an allocation fails. This function lets
  * you supply alternative allocation functions at runtime.
- * 
+ *
  * If you pass `NULL` for any parameter, Tree-sitter will switch back to
  * its default implementation of that function.
- * 
+ *
  * If you call this function after the library has already been used, then
  * you must ensure that either:
  *  1. All the existing objects have been freed.

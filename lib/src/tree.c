@@ -103,3 +103,30 @@ TSRange *ts_tree_get_changed_ranges(const TSTree *self, const TSTree *other, uin
 void ts_tree_print_dot_graph(const TSTree *self, FILE *file) {
   ts_subtree_print_dot_graph(self->root, self->language, file);
 }
+
+size_t ts_tree_depth_for_byte(const TSTree *self, uint32_t byte) {
+  int depth = 0;
+  TSTreeCursor cursor = ts_tree_cursor_new(ts_node_first_child_for_byte
+                                           (ts_tree_root_node (self), byte));
+  for (TSNode node = ts_tree_cursor_current_node(&cursor);
+       !ts_node_is_null (node);
+       (void)node) {
+    if (byte < ts_node_start_byte(node)) {
+      break;
+    } else if (byte >= ts_node_end_byte(node)) {
+      if (!ts_tree_cursor_goto_next_sibling(&cursor))
+        break;
+      node = ts_tree_cursor_current_node(&cursor);
+    } else if (!ts_tree_cursor_goto_first_child(&cursor)) {
+      break;
+    } else {
+      node = ts_tree_cursor_current_node(&cursor);
+      /* for (int i = 0; i < depth; ++i) */
+      /*   fprintf(stderr, "  "); */
+      /* fprintf(stderr, "%s\n", ts_node_type(node)); */
+      depth = depth + (strcmp(ts_node_type(node), ")") == 0 ? -1 : 1);
+    }
+  }
+  ts_tree_cursor_delete(&cursor);
+  return depth;
+}
