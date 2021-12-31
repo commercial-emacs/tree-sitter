@@ -327,10 +327,13 @@ static inline TSNode ts_node__descendant_for_byte_range(
   TSNode self,
   uint32_t range_start,
   uint32_t range_end,
-  bool include_anonymous
+  bool include_anonymous,
+  size_t *depth
 ) {
   TSNode node = self;
   TSNode last_visible_node = self;
+  if (depth)
+    *depth = 0;
 
   bool did_descend = true;
   while (did_descend) {
@@ -355,6 +358,14 @@ static inline TSNode ts_node__descendant_for_byte_range(
         last_visible_node = node;
       }
       did_descend = true;
+      if (depth)
+        {
+          (*depth)++;
+          fprintf (stderr, "bar %u %u %ld\n",
+                   ts_node_start_byte (node),
+                   ts_node_end_byte (node),
+                   *depth);
+        }
       break;
     }
   }
@@ -641,12 +652,20 @@ TSNode ts_node_first_named_child_for_byte(TSNode self, uint32_t byte) {
   return ts_node__first_child_for_byte(self, byte, false);
 }
 
+TSNode ts_node_descendant_etc_for_byte(
+  TSNode self,
+  uint32_t start,
+  size_t *depth
+) {
+  return ts_node__descendant_for_byte_range(self, start, start, true, depth);
+}
+
 TSNode ts_node_descendant_for_byte_range(
   TSNode self,
   uint32_t start,
   uint32_t end
 ) {
-  return ts_node__descendant_for_byte_range(self, start, end, true);
+  return ts_node__descendant_for_byte_range(self, start, end, true, NULL);
 }
 
 TSNode ts_node_named_descendant_for_byte_range(
@@ -654,7 +673,7 @@ TSNode ts_node_named_descendant_for_byte_range(
   uint32_t start,
   uint32_t end
 ) {
-  return ts_node__descendant_for_byte_range(self, start, end, false);
+  return ts_node__descendant_for_byte_range(self, start, end, false, NULL);
 }
 
 TSNode ts_node_descendant_for_point_range(

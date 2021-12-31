@@ -554,6 +554,7 @@ TSNode ts_node_first_named_child_for_byte(TSNode, uint32_t);
  * Get the smallest node within this node that spans the given range of bytes
  * or (row, column) positions.
  */
+TSNode ts_node_descendant_etc_for_byte(TSNode, uint32_t, size_t *);
 TSNode ts_node_descendant_for_byte_range(TSNode, uint32_t, uint32_t);
 TSNode ts_node_descendant_for_point_range(TSNode, TSPoint, TSPoint);
 
