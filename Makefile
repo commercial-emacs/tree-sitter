@@ -1,4 +1,4 @@
-VERSION := 0.6.3alpha
+VERSION := 0.6.3alpha2
 
 LIBDIR ?= $(shell \
   if 1>/dev/null which systemd-path ; then \
