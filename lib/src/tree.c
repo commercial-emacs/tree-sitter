@@ -124,7 +124,7 @@ size_t ts_tree_depth_for_byte(const TSTree *self, uint32_t byte) {
       /* for (int i = 0; i < depth; ++i) */
       /*   fprintf(stderr, "  "); */
       /* fprintf(stderr, "%s\n", ts_node_type(node)); */
-      depth = depth + (strcmp(ts_node_type(node), ")") == 0 ? -1 : 1);
+      depth++;
     }
   }
   ts_tree_cursor_delete(&cursor);
