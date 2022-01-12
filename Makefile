@@ -1,4 +1,4 @@
-VERSION := 0.6.3alpha3
+export VERSION := $(shell git describe --tags --abbrev=0 2>/dev/null || echo 0.6.3alpha2)
 
 LIBDIR ?= $(shell \
   if 1>/dev/null which systemd-path ; then \
@@ -115,3 +115,11 @@ install: install-ci install-grammars
 .PHONY: clean
 clean:
 	rm -rf lib/src/*.o libtree-sitter.a libtree-sitter.$(SOEXT) libtree-sitter.$(SOEXTVER_MAJOR) libtree-sitter.$(SOEXTVER) grammars
+
+.PHONY: retag
+retag:
+	2>/dev/null git tag -d $(VERSION) || true
+	2>/dev/null git push --delete origin $(VERSION) || true
+	git tag $(VERSION)
+	git push origin $(VERSION)
+
