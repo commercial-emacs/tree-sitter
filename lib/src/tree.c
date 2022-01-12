@@ -104,11 +104,11 @@ void ts_tree_print_dot_graph(const TSTree *self, FILE *file) {
   ts_subtree_print_dot_graph(self->root, self->language, file);
 }
 
-size_t ts_tree_depth_for_byte(const TSTree *self, uint32_t byte) {
-  int depth = 0;
+TSNode ts_tree_node_at(const TSTree *self, uint32_t byte) {
+  TSNode node;
   TSTreeCursor cursor = ts_tree_cursor_new(ts_node_first_child_for_byte
                                            (ts_tree_root_node (self), byte));
-  for (TSNode node = ts_tree_cursor_current_node(&cursor);
+  for (node = ts_tree_cursor_current_node(&cursor);
        !ts_node_is_null (node);
        (void)node) {
     if (byte < ts_node_start_byte(node)) {
@@ -121,12 +121,8 @@ size_t ts_tree_depth_for_byte(const TSTree *self, uint32_t byte) {
       break;
     } else {
       node = ts_tree_cursor_current_node(&cursor);
-      /* for (int i = 0; i < depth; ++i) */
-      /*   fprintf(stderr, "  "); */
-      /* fprintf(stderr, "%s\n", ts_node_type(node)); */
-      depth++;
     }
   }
   ts_tree_cursor_delete(&cursor);
-  return depth;
+  return node;
 }

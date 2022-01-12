@@ -398,9 +398,9 @@ TSRange *ts_tree_get_changed_ranges(
 void ts_tree_print_dot_graph(const TSTree *, FILE *);
 
 /**
- * Get the s-expr depth of byte.
+ * Get the node spanning the buffer byte.
  */
-size_t ts_tree_depth_for_byte(const TSTree *, uint32_t);
+TSNode ts_tree_node_at(const TSTree *, uint32_t);
 
 /******************/
 /* Section - Node */
