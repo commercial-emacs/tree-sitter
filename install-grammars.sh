@@ -58,17 +58,19 @@ cat <<EOF > "$DIR/config.json"
 }
 EOF
 
-QDIR="$(tree-sitter dump-libpath)"/../queries
+QDIR="$($TS dump-libpath)"/../queries
 mkdir -p "$QDIR"
 for repo in "$DIR"/tree-sitter-* ; do
     scope=$(cat $repo/package.json | 2>/dev/null jq -r '."tree-sitter"[].scope')
     if [ ! -z "$scope" ] ; then
-	if TREE_SITTER_DIR="$DIR" 1>/dev/null 2>/dev/null \
-			  tree-sitter parse --scope "$scope" /dev/null ; then
-	    if [ -f "$repo/queries/highlights.scm" ] ; then
-		LANG=${repo##*-}
-		mkdir -p "$QDIR/$LANG"
-		cp -p "$repo/queries/highlights.scm" "$QDIR/$LANG"
+	if ( cd $repo ; 1>/dev/null 2>/dev/null $TS generate ) ; then
+	    if TREE_SITTER_DIR="$DIR" 1>/dev/null 2>/dev/null \
+			      $TS parse --scope "$scope" /dev/null ; then
+		if [ -f "$repo/queries/highlights.scm" ] ; then
+		    LANG=${repo##*-}
+		    mkdir -p "$QDIR/$LANG"
+		    cp -p "$repo/queries/highlights.scm" "$QDIR/$LANG"
+		fi
 	    fi
 	fi
     fi
