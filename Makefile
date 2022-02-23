@@ -91,7 +91,7 @@ install-cli:
 
 .PHONY: install-grammars
 install-grammars: install-cli
-	bash install-grammars.sh
+	bash -x install-grammars.sh
 
 .PHONY: install-ci
 install-ci: all install-highlight
@@ -122,4 +122,3 @@ retag:
 	2>/dev/null git push --delete origin $(VERSION) || true
 	git tag $(VERSION)
 	git push origin $(VERSION)
-

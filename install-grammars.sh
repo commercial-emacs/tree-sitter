@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/usr/bin/env bash
 
 JQ=$(which jq || true)
 if [ -z "$JQ" ] ; then
@@ -16,21 +16,28 @@ function git_refresh {
     local repo
     local url
     local branch
+    local commit
     repo=$1
     url=$2
     if [ -d "$repo" ] ; then
 	pushd $repo
 	branch=$(git rev-parse --abbrev-ref HEAD)
+	commit=$(git rev-parse --short HEAD)
 	git fetch -q -u origin $branch:$branch --depth=1
+	if [[ ! $(git rev-parse --short HEAD) =~ "$commit" ]] ; then
+	    regenerate+=( $repo )
+	fi
 	popd
     else
 	git clone --depth=1 --single-branch $url $repo
+	regenerate+=( $repo )
     fi
 }
 
 DIR=$(git rev-parse --show-toplevel)/grammars
 mkdir -p $DIR
 declare -a official=()
+declare -a regenerate=()
 IFS=$'\n'
 for url in $(egrep -o "https://github.com/tree-sitter/tree-sitter-[A-Za-z0-9-]+" \
 		   docs/index.md | sort -u) ; do
@@ -60,7 +67,7 @@ EOF
 
 QDIR="$($TS dump-libpath)"/../queries
 mkdir -p "$QDIR"
-for repo in "$DIR"/tree-sitter-* ; do
+for repo in "${regenerate[@]}" ; do
     scope=$(cat $repo/package.json | 2>/dev/null jq -r '."tree-sitter"[].scope')
     if [ ! -z "$scope" ] ; then
 	if ( cd $repo ; 1>/dev/null 2>/dev/null $TS generate ) ; then
