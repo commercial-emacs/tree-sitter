@@ -23,7 +23,7 @@ function git_refresh {
 	pushd $repo
 	branch=$(git rev-parse --abbrev-ref HEAD)
 	commit=$(git rev-parse --short HEAD)
-	git fetch -q -u origin $branch:$branch --depth=1
+	git fetch -f -q -u origin $branch:$branch --depth=1
 	if [[ ! $(git rev-parse --short HEAD) =~ "$commit" ]] ; then
 	    regenerate+=( $repo )
 	fi
