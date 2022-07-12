@@ -55,16 +55,10 @@ ifneq (,$(filter $(shell uname),FreeBSD NetBSD DragonFly))
 endif
 
 .PHONY: all
-all: libtree-sitter.a libtree-sitter.$(SOEXTVER)
+all: libtree-sitter.$(SOEXTVER)
 
-target/debug/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
-	( cd highlight ; cargo build )
-
-target/release/libtree_sitter_highlight.a: target/debug/libtree_sitter_highlight.a lib/binding_rust/lib.rs
+target/release/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
 	( cd highlight ; cargo build --release )
-
-libtree-sitter.a: $(OBJ)
-	$(AR) rcs $@ $^
 
 libtree-sitter.$(SOEXTVER): $(OBJ)
 	$(CC) $(LDFLAGS) $(LINKSHARED) $^ $(LDLIBS) -o $@
@@ -73,13 +67,6 @@ libtree-sitter.$(SOEXTVER): $(OBJ)
 
 .PHONY: install-highlight
 install-highlight: target/release/libtree_sitter_highlight.a
-	install -d '$(DESTDIR)$(LIBDIR)'
-	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
-	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
-	install -m644 highlight/include/tree_sitter/*.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/
-
-.PHONY: install-highlight-debug
-install-highlight-debug: target/debug/libtree_sitter_highlight.a
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
 	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
@@ -96,7 +83,6 @@ install-grammars: install-cli
 .PHONY: install-ci
 install-ci: all install-highlight
 	install -d '$(DESTDIR)$(LIBDIR)'
-	install -m755 libtree-sitter.a '$(DESTDIR)$(LIBDIR)'/libtree-sitter.a
 	install -m755 libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER)
 	ln -sf libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER_MAJOR)
 	ln -sf libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXT)
@@ -114,7 +100,12 @@ install: install-ci install-grammars
 
 .PHONY: clean
 clean:
-	rm -rf lib/src/*.o libtree-sitter.a libtree-sitter.$(SOEXT) libtree-sitter.$(SOEXTVER_MAJOR) libtree-sitter.$(SOEXTVER) grammars
+	cargo clean
+	rm -rf lib/src/*.o libtree-sitter.$(SOEXT) libtree-sitter.$(SOEXTVER_MAJOR) libtree-sitter.$(SOEXTVER)
+
+.PHONY: very-clean
+very-clean: clean
+	rm -rf grammars
 
 .PHONY: retag
 retag:
