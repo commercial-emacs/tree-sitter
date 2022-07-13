@@ -34,11 +34,10 @@ static inline CursorChildIterator ts_tree_cursor_iterate_children(const TreeCurs
   };
 }
 
-static inline bool ts_tree_cursor_child_iterator_move(
+static inline bool ts_tree_cursor_child_iterator_next(
   CursorChildIterator *self,
   TreeCursorEntry *result,
-  bool *visible,
-  bool forward
+  bool *visible
 ) {
   if (!self->parent.ptr || self->child_index == self->parent.ptr->child_count) return false;
   const Subtree *child = &ts_subtree_children(self->parent)[self->child_index];
@@ -52,47 +51,18 @@ static inline bool ts_tree_cursor_child_iterator_move(
   bool extra = ts_subtree_extra(*child);
   if (!extra && self->alias_sequence) {
     *visible |= self->alias_sequence[self->structural_child_index];
-    if (!forward && self->structural_child_index == 0)
-      self->structural_child_index = self->parent.ptr->child_count;
-    else
-      self->structural_child_index += forward ? 1 : -1;
-    assert((int)self->structural_child_index >= 0);
+    self->structural_child_index++;
   }
 
-  self->position = forward
-    ? length_add(self->position, ts_subtree_size(*child))
-    : length_sub(self->position, ts_subtree_size(*child));
-
-  if (!forward && self->child_index == 0)
-    self->child_index = self->parent.ptr->child_count;
-  else
-    self->child_index += forward ? 1 : -1;
-  assert((int)self->child_index >= 0);
+  self->position = length_add(self->position, ts_subtree_size(*child));
+  self->child_index++;
 
   if (self->child_index < self->parent.ptr->child_count) {
     Subtree next_child = ts_subtree_children(self->parent)[self->child_index];
-    self->position = forward
-      ? length_add(self->position, ts_subtree_padding(next_child))
-      : length_sub(self->position, ts_subtree_padding(next_child));
+    self->position = length_add(self->position, ts_subtree_padding(next_child));
   }
 
   return true;
-}
-
-static inline bool ts_tree_cursor_child_iterator_next(
-  CursorChildIterator *self,
-  TreeCursorEntry *result,
-  bool *visible
-) {
-  return ts_tree_cursor_child_iterator_move(self, result, visible, true);
-}
-
-static inline bool ts_tree_cursor_child_iterator_prev(
-  CursorChildIterator *self,
-  TreeCursorEntry *result,
-  bool *visible
-) {
-  return ts_tree_cursor_child_iterator_move(self, result, visible, false);
 }
 
 // TSTreeCursor - lifecycle
@@ -233,15 +203,9 @@ int64_t ts_tree_cursor_goto_first_child_for_point(TSTreeCursor *_self, TSPoint g
   return -1;
 }
 
-static inline bool ts_tree_cursor_goto_sibling(TSTreeCursor *_self, bool forward) {
+bool ts_tree_cursor_goto_next_sibling(TSTreeCursor *_self) {
   TreeCursor *self = (TreeCursor *)_self;
   uint32_t initial_size = self->stack.size;
-
-  bool (*functor) (CursorChildIterator *self,
-                   TreeCursorEntry *result,
-                   bool *visible) = forward
-    ? &ts_tree_cursor_child_iterator_next
-    : &ts_tree_cursor_child_iterator_prev;
 
   while (self->stack.size > 1) {
     TreeCursorEntry entry = array_pop(&self->stack);
@@ -251,10 +215,10 @@ static inline bool ts_tree_cursor_goto_sibling(TSTreeCursor *_self, bool forward
     iterator.position = entry.position;
 
     bool visible = false;
-    functor(&iterator, &entry, &visible);
+    ts_tree_cursor_child_iterator_next(&iterator, &entry, &visible);
     if (visible && self->stack.size + 1 < initial_size) break;
 
-    while (functor(&iterator, &entry, &visible)) {
+    while (ts_tree_cursor_child_iterator_next(&iterator, &entry, &visible)) {
       if (visible) {
         array_push(&self->stack, entry);
         return true;
@@ -270,14 +234,6 @@ static inline bool ts_tree_cursor_goto_sibling(TSTreeCursor *_self, bool forward
 
   self->stack.size = initial_size;
   return false;
-}
-
-bool ts_tree_cursor_goto_next_sibling(TSTreeCursor *self) {
-  return ts_tree_cursor_goto_sibling(self, true);
-}
-
-bool ts_tree_cursor_goto_prev_sibling(TSTreeCursor *self) {
-  return ts_tree_cursor_goto_sibling(self, false);
 }
 
 bool ts_tree_cursor_goto_parent(TSTreeCursor *_self) {

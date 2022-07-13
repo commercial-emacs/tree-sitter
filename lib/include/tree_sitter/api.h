@@ -654,14 +654,6 @@ bool ts_tree_cursor_goto_parent(TSTreeCursor *);
 bool ts_tree_cursor_goto_next_sibling(TSTreeCursor *);
 
 /**
- * Move the cursor to the previous sibling of its current node.
- *
- * This returns `true` if the cursor successfully moved, and returns `false`
- * if there was no previous sibling node.
- */
-bool ts_tree_cursor_goto_prev_sibling(TSTreeCursor *);
-
-/**
  * Move the cursor to the first child of its current node.
  *
  * This returns `true` if the cursor successfully moved, and returns `false`
