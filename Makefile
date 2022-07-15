@@ -94,14 +94,14 @@ install-ci: all install-highlight
 	    -e 's|@PREFIX@|$(PREFIX)|' \
 	    tree-sitter.pc.in > '$(DESTDIR)$(PCLIBDIR)'/tree-sitter.pc
 	PKG_CONFIG_PATH=$(PKG_CONFIG_PATH):'$(DESTDIR)$(PCLIBDIR)' pkg-config --exact-version=$(VERSION) tree-sitter
+
+.PHONY: install
+install: install-ci install-grammars
 	@echo "!!!"
 	@echo "!!!                  USER NOTICE"
 	@echo "!!!"
 	@echo "!!! Add '$(DESTDIR)$(PCLIBDIR)' to PKG_CONFIG_PATH"
 	@echo "!!!"
-
-.PHONY: install
-install: install-ci install-grammars
 
 .PHONY: clean
 clean:
