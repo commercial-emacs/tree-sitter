@@ -222,9 +222,7 @@ impl HighlightConfiguration {
         for i in 0..(query.pattern_count()) {
             let pattern_offset = query.start_byte_for_pattern(i);
             if pattern_offset < highlights_query_offset {
-                if pattern_offset < highlights_query_offset {
-                    highlights_pattern_index += 1;
-                }
+                highlights_pattern_index += 1;
                 if pattern_offset < locals_query_offset {
                     locals_pattern_index += 1;
                 }

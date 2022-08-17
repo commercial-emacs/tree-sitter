@@ -46,6 +46,7 @@ for url in $(egrep -o "https://github.com/tree-sitter/tree-sitter-[A-Za-z0-9-]+"
     official+=( $repo )
     git_refresh "$DIR/$repo" $url
 done
+unset IFS
 
 IFS=$'\n'
 for url in $(egrep -o "https://github.com/.+/tree-sitter-[A-Za-z0-9-]+" \
@@ -56,6 +57,10 @@ for url in $(egrep -o "https://github.com/.+/tree-sitter-[A-Za-z0-9-]+" \
 	git_refresh "$DIR/$repo" $url
     fi
 done
+unset IFS
+
+git_refresh "$DIR/nvim-treesitter" \
+	    "https://github.com/nvim-treesitter/nvim-treesitter.git"
 
 cat <<EOF > "$DIR/config.json"
 {
@@ -78,6 +83,19 @@ for repo in "${regenerate[@]}" ; do
 		    mkdir -p "$QDIR/$LANG"
 		    cp -p "$repo/queries/highlights.scm" "$QDIR/$LANG"
 		fi
+	    fi
+	fi
+    fi
+done
+
+for dir in "$DIR/nvim-treesitter/queries"/* ; do
+    indents="$dir/indents.scm"
+    if [ -f "$indents" ] ; then
+        LANG=$(basename $dir)
+	if [ -d "$QDIR/$LANG" ] ; then
+	    if [ ! -f "$QDIR/$LANG/indents.scm" ] || \
+		   [ "$indents" -nt "$QDIR/$LANG/indents.scm" ]; then
+		cp -p "$indents" "$QDIR/$LANG/indents.scm"
 	    fi
 	fi
     fi
