@@ -57,8 +57,11 @@ endif
 .PHONY: all
 all: libtree-sitter.$(SOEXTVER)
 
-target/release/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
+target/release/libtree-sitter-highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
 	( cd highlight ; cargo build --release )
+
+target/release/libtree-sitter-query.a: lib/binding_rust/c_lib.rs lib/binding_rust/lib.rs
+	cargo build --release
 
 libtree-sitter.$(SOEXTVER): $(OBJ)
 	$(CC) $(LDFLAGS) $(LINKSHARED) $^ $(LDLIBS) -o $@

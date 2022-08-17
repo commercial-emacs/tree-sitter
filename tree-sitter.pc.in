@@ -6,5 +6,5 @@ Name: tree-sitter
 Description: An incremental parsing system for programming tools
 URL: https://tree-sitter.github.io/
 Version: @VERSION@
-Libs: -L${libdir} -ltree-sitter -ltree_sitter_highlight
+Libs: -L${libdir} -ltree-sitter -ltree-sitter-highlight
 Cflags: -I${includedir}
