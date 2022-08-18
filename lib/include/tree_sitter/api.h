@@ -142,6 +142,11 @@ typedef enum {
   TSQueryErrorLanguage,
 } TSQueryError;
 
+typedef struct {
+  TSQueryCapture *arr;
+  uint32_t len;
+} TSQueryCaptureSlice;
+
 /********************/
 /* Section - Parser */
 /********************/
@@ -878,6 +883,24 @@ bool ts_query_cursor_next_capture(
   TSQueryMatch *match,
   uint32_t *capture_index
 );
+
+/**
+ * Omnibus capture slice.
+ *
+ * Return all captures in range.
+ */
+TSQueryCaptureSlice ts_captures_new(
+  const TSLanguage *,
+  const char *source_query,
+  uint32_t source_query_len,
+  const char *source_code,
+  uint32_t source_code_len,
+  const TSNode *node,
+  uint32_t byte_start,
+  uint32_t byte_end
+);
+
+void ts_captures_free(TSQueryCaptureSlice);
 
 /**********************/
 /* Section - Language */

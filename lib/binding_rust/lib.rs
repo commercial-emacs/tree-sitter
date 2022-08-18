@@ -3,7 +3,6 @@ mod util;
 
 #[cfg(unix)]
 use std::os::unix::io::AsRawFd;
-
 use std::{
     char, error,
     ffi::CStr,
@@ -11,6 +10,7 @@ use std::{
     marker::PhantomData,
     mem::MaybeUninit,
     ops,
+    io::{self, Write},
     os::raw::{c_char, c_void},
     ptr::{self, NonNull},
     slice, str,
@@ -202,6 +202,65 @@ pub trait TextProvider<'a> {
 pub struct QueryCapture<'a> {
     pub node: Node<'a>,
     pub index: u32,
+}
+
+#[no_mangle]
+pub extern "C" fn ts_captures_new(
+    language: Language,
+    source_query: *const c_char,
+    source_query_len: u32,
+    source_code: *const c_char,
+    source_code_len: u32,
+    node: &Node,
+    byte_start: u32,
+    byte_end: u32,
+) -> ffi::TSQueryCaptureSlice {
+    let source_query = unsafe { slice::from_raw_parts(source_query as *const u8,
+                                                      source_query_len as usize) };
+    let source_query = unsafe { str::from_utf8_unchecked(source_query) };
+    let query = Query::new(language, source_query).expect("Query compilation failed");
+    let source_code = unsafe { slice::from_raw_parts(source_code as *const u8,
+                                                     source_code_len as usize) };
+    let source_code = unsafe { str::from_utf8_unchecked(source_code) };
+    let mut query_cursor = QueryCursor::new();
+    query_cursor.set_byte_range(std::ops::Range { start: byte_start as usize,
+                                                  end: byte_end as usize });
+    let mut result = Vec::new();
+    let stdout = io::stdout();
+    let mut stdout = stdout.lock();
+    for (mat, capture_index) in
+        query_cursor.captures(&query, *node, source_code.as_bytes())
+    {
+        let capture = mat.captures[capture_index];
+        let capture_name = &query.capture_names()[capture.index as usize];
+        writeln!(
+            &mut stdout,
+            "    pattern: {:>2}, capture: {} - {}, start: {}, end: {}",
+            mat.pattern_index,
+            capture.index,
+            capture_name,
+            capture.node.start_position(),
+            capture.node.end_position()).expect("writeln failed");
+        result.push(ffi::TSQueryCapture {
+            node: capture.node.0,
+            index: capture.index,
+        });
+    }
+    let len = result.len() as u32;
+    let boxed_slice: Box<[ffi::TSQueryCapture]> = result.into_boxed_slice();
+    let fat_ptr: *mut [ffi::TSQueryCapture] = Box::into_raw(boxed_slice);
+    let slim_ptr: *mut ffi::TSQueryCapture = fat_ptr as _;
+    ffi::TSQueryCaptureSlice { arr: slim_ptr, len: len }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn ts_captures_free(
+    ffi::TSQueryCaptureSlice { arr, len }: ffi::TSQueryCaptureSlice,
+) {
+    if !arr.is_null() {
+        let slice: &mut [ffi::TSQueryCapture] = slice::from_raw_parts_mut(arr, len as usize);
+        drop(Box::from_raw(slice));
+    }
 }
 
 /// An error that occurred when trying to assign an incompatible `Language` to a `Parser`.

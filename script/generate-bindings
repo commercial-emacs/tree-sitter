@@ -2,6 +2,10 @@
 
 output_path=lib/binding_rust/bindings.rs
 header_path='lib/include/tree_sitter/api.h'
+block_type_underscores="--blocklist-type ^__.*"
+if echo "#include <bits/stdint-uintn.h>" | 2>/dev/null cc -c -o /dev/null -xc - ; then
+  block_type_underscores=""
+fi
 
 bindgen                                        \
   --no-layout-tests                            \
@@ -9,7 +13,7 @@ bindgen                                        \
   --whitelist-function '^ts_.*'                \
   --opaque-type FILE                           \
   --blocklist-type FILE                        \
-  --blocklist-type '^__.*'                     \
+  $block_type_underscores                      \
   --blocklist-function ts_tree_print_dot_graph \
   --size_t-is-usize                            \
   $header_path > $output_path
