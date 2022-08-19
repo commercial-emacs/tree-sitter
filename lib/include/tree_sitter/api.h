@@ -895,7 +895,7 @@ TSQueryCaptureSlice ts_captures_new(
   uint32_t source_query_len,
   const char *source_code,
   uint32_t source_code_len,
-  const TSNode *node,
+  TSNode node,
   uint32_t byte_start,
   uint32_t byte_end
 );

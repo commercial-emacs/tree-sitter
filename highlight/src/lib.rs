@@ -129,7 +129,7 @@ impl Highlighter {
         &'a mut self,
         config: &'a HighlightConfiguration,
         source: &'a [u8],
-        node: &'a Node,
+        node: Node<'a>,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
         let layers = HighlightIterLayer::preparsed(source, node, self, config)?;
         assert_ne!(layers.len(), 0);
@@ -449,7 +449,7 @@ impl<'a> HighlightIterLayer<'a> {
 
     fn preparsed(
         source: &'a [u8],
-        node: &'a Node,
+        node: Node<'a>,
         highlighter: &mut Highlighter,
         config: &'a HighlightConfiguration,
     ) -> Result<Vec<Self>, Error> {
@@ -464,7 +464,7 @@ impl<'a> HighlightIterLayer<'a> {
         // The `captures` iterator borrows the `QueryCursor`, which
         // prevents it from being moved.
         let cursor_ref = unsafe { mem::transmute::<_, &'static mut QueryCursor>(&mut cursor) };
-        let captures = cursor_ref.captures(&config.query, *node, source).peekable();
+        let captures = cursor_ref.captures(&config.query, node, source).peekable();
         result.push(HighlightIterLayer {
             highlight_end_stack: Vec::new(),
             scope_stack: vec![LocalScope {

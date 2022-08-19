@@ -196,7 +196,7 @@ pub extern "C" fn ts_highlighter_return_highlights(
     scope_name: *const c_char,
     source_code: *const c_char,
     source_code_len: u32,
-    node: &Node,
+    node: Node,
     output: *mut TSHighlightBuffer,
 ) -> TSHighlightEventSlice {
     let this = unwrap_ptr(this);
@@ -275,7 +275,7 @@ impl TSHighlighter {
         &'a self,
         source_code: &'a [u8],
         scope_name: &'a str,
-        node: &'a Node,
+        node: Node<'a>,
         highlighter: &'a mut Highlighter,
     ) -> Result<impl Iterator<Item = Result<HighlightEvent, Error>> + 'a, Error> {
         let entry = self.languages.get(scope_name);

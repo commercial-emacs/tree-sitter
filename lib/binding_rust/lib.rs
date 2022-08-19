@@ -211,7 +211,7 @@ pub extern "C" fn ts_captures_new(
     source_query_len: u32,
     source_code: *const c_char,
     source_code_len: u32,
-    node: &Node,
+    node: Node,
     byte_start: u32,
     byte_end: u32,
 ) -> ffi::TSQueryCaptureSlice {
@@ -229,7 +229,7 @@ pub extern "C" fn ts_captures_new(
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
     for (mat, capture_index) in
-        query_cursor.captures(&query, *node, source_code.as_bytes())
+        query_cursor.captures(&query, node, source_code.as_bytes())
     {
         let capture = mat.captures[capture_index];
         let capture_name = &query.capture_names()[capture.index as usize];

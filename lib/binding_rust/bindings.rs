@@ -820,7 +820,7 @@ extern "C" {
         source_query_len: u32,
         source_code: *const ::std::os::raw::c_char,
         source_code_len: u32,
-        node: *const TSNode,
+        node: TSNode,
         byte_start: u32,
         byte_end: u32,
     ) -> TSQueryCaptureSlice;

@@ -42,7 +42,7 @@ TSHighlightEventSlice ts_highlighter_return_highlights(
   const char *scope_name,
   const char *source_code,
   uint32_t source_code_len,
-  const TSNode *node,
+  TSNode node,
   TSHighlightBuffer *output
 );
 
