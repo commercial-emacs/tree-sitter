@@ -235,9 +235,7 @@ pub extern "C" fn ts_captures_new(
         let capture_name = &query.capture_names()[capture.index as usize];
         writeln!(
             &mut stdout,
-            "    pattern: {:>2}, capture: {} - {}, start: {}, end: {}",
-            mat.pattern_index,
-            capture.index,
+            "capture: {}, start: {}, end: {}",
             capture_name,
             capture.node.start_position(),
             capture.node.end_position()).expect("writeln failed");
