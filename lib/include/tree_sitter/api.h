@@ -121,11 +121,6 @@ typedef struct {
   const TSQueryCapture *captures;
 } TSQueryMatch;
 
-typedef struct {
-  TSQueryMatch *arr;
-  uint32_t len;
-} TSQueryMatchSlice;
-
 typedef enum {
   TSQueryPredicateStepTypeDone,
   TSQueryPredicateStepTypeCapture,
@@ -146,6 +141,11 @@ typedef enum {
   TSQueryErrorStructure,
   TSQueryErrorLanguage,
 } TSQueryError;
+
+typedef struct {
+  TSQueryCapture *arr;
+  uint32_t len;
+} TSQueryCaptureSlice;
 
 /********************/
 /* Section - Parser */
@@ -889,7 +889,7 @@ bool ts_query_cursor_next_capture(
  *
  * Return all captures in range.
  */
-TSQueryMatchSlice ts_matches_new(
+TSQueryCaptureSlice ts_captures_new(
   const TSLanguage *,
   const char *source_query,
   uint32_t source_query_len,
@@ -900,7 +900,7 @@ TSQueryMatchSlice ts_matches_new(
   uint32_t byte_end
 );
 
-void ts_matches_free(TSQueryMatchSlice);
+void ts_captures_free(TSQueryCaptureSlice);
 
 /**********************/
 /* Section - Language */

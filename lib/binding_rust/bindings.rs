@@ -145,8 +145,8 @@ pub const TSQueryError_TSQueryErrorLanguage: TSQueryError = 6;
 pub type TSQueryError = ::std::os::raw::c_uint;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct TSQueryMatchSlice {
-    pub arr: *mut TSQueryMatch,
+pub struct TSQueryCaptureSlice {
+    pub arr: *mut TSQueryCapture,
     pub len: u32,
 }
 extern "C" {
@@ -811,10 +811,10 @@ extern "C" {
     ) -> bool;
 }
 extern "C" {
-    #[doc = " Omnibus match slice."]
+    #[doc = " Omnibus capture slice."]
     #[doc = ""]
-    #[doc = " Return all matches in range."]
-    pub fn ts_matches_new(
+    #[doc = " Return all captures in range."]
+    pub fn ts_captures_new(
         arg1: *const TSLanguage,
         source_query: *const ::std::os::raw::c_char,
         source_query_len: u32,
@@ -823,10 +823,10 @@ extern "C" {
         node: TSNode,
         byte_start: u32,
         byte_end: u32,
-    ) -> TSQueryMatchSlice;
+    ) -> TSQueryCaptureSlice;
 }
 extern "C" {
-    pub fn ts_matches_free(arg1: TSQueryMatchSlice);
+    pub fn ts_captures_free(arg1: TSQueryCaptureSlice);
 }
 extern "C" {
     #[doc = " Get the number of distinct node types in the language."]

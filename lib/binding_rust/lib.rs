@@ -205,7 +205,7 @@ pub struct QueryCapture<'a> {
 }
 
 #[no_mangle]
-pub extern "C" fn ts_matches_new(
+pub extern "C" fn ts_captures_new(
     language: Language,
     source_query: *const c_char,
     source_query_len: u32,
@@ -214,7 +214,7 @@ pub extern "C" fn ts_matches_new(
     node: Node,
     byte_start: u32,
     byte_end: u32,
-) -> ffi::TSQueryMatchSlice {
+) -> ffi::TSQueryCaptureSlice {
     let source_query = unsafe { slice::from_raw_parts(source_query as *const u8,
                                                       source_query_len as usize) };
     let source_query = unsafe { str::from_utf8_unchecked(source_query) };
@@ -225,57 +225,39 @@ pub extern "C" fn ts_matches_new(
     let mut query_cursor = QueryCursor::new();
     query_cursor.set_byte_range(std::ops::Range { start: byte_start as usize,
                                                   end: byte_end as usize });
-    let result = Vec::new();
+    let mut result = Vec::new();
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-    for m in query_cursor.matches(&query, node, source_code.as_bytes()) {
-        writeln!(&mut stdout, "  pattern: {}", m.pattern_index)
-            .expect("writeln failed");
-        for capture in m.captures {
-            let capture_name = &query.capture_names()[capture.index as usize];
-            let start = capture.node.start_position();
-            let end = capture.node.end_position();
-            writeln!(
-                &mut stdout,
-                "    capture: {}, start: {}, end: {}{}",
-                capture_name,
-                start,
-                end,
-                if start.row == end.row {
-                    format!(", text: `{}`",
-                            capture.node.utf8_text(source_code.as_bytes()).unwrap_or(""))
-                } else {
-                    String::from("")
-                },
-            ).expect("writeln failed");
-            // result.push(ffi::TSQueryMatch {
-            //     id: m.id,
-            //     pattern_index: m.pattern_index,
-            //     capture_count: m.captures.len(),
-            //     captures: m.captures,
-            // });
-        }
+    for (mat, capture_index) in
+        query_cursor.captures(&query, node, source_code.as_bytes())
+    {
+        let capture = mat.captures[capture_index];
+        let capture_name = &query.capture_names()[capture.index as usize];
+        writeln!(
+            &mut stdout,
+            "capture: {}, start: {}, end: {}",
+            capture_name,
+            capture.node.start_position(),
+            capture.node.end_position()).expect("writeln failed");
+        result.push(ffi::TSQueryCapture {
+            node: capture.node.0,
+            index: capture.index,
+        });
     }
     let len = result.len() as u32;
-    let boxed_slice: Box<[ffi::TSQueryMatch]> = result.into_boxed_slice();
-    let fat_ptr: *mut [ffi::TSQueryMatch] = Box::into_raw(boxed_slice);
-    let slim_ptr: *mut ffi::TSQueryMatch = fat_ptr as _;
-    ffi::TSQueryMatchSlice { arr: slim_ptr, len: len }
+    let boxed_slice: Box<[ffi::TSQueryCapture]> = result.into_boxed_slice();
+    let fat_ptr: *mut [ffi::TSQueryCapture] = Box::into_raw(boxed_slice);
+    let slim_ptr: *mut ffi::TSQueryCapture = fat_ptr as _;
+    ffi::TSQueryCaptureSlice { arr: slim_ptr, len: len }
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn ts_matches_free(
-    ffi::TSQueryMatchSlice { arr, len }: ffi::TSQueryMatchSlice,
+pub unsafe extern "C" fn ts_captures_free(
+    ffi::TSQueryCaptureSlice { arr, len }: ffi::TSQueryCaptureSlice,
 ) {
     if !arr.is_null() {
-        let matches: &mut [ffi::TSQueryMatch] = slice::from_raw_parts_mut(arr, len as usize);
-        for m in matches {
-            let captures: &mut [ffi::TSQueryCapture] =
-                slice::from_raw_parts_mut(&mut *m.captures,
-                                          m.capture_count as usize);
-            drop(Box::from_raw(captures));
-        }
-        drop(Box::from_raw(matches));
+        let slice: &mut [ffi::TSQueryCapture] = slice::from_raw_parts_mut(arr, len as usize);
+        drop(Box::from_raw(slice));
     }
 }
 
