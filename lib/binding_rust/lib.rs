@@ -8,7 +8,7 @@ use std::{
     ffi::CStr,
     fmt, hash, iter,
     marker::PhantomData,
-    mem::{MaybeUninit, forget},
+    mem::{forget, MaybeUninit},
     ops,
     os::raw::{c_char, c_void},
     ptr::{self, NonNull},
@@ -212,22 +212,22 @@ pub extern "C" fn ts_captures_new(
     source_code_len: u32,
     node: Node,
     byte_start: u32,
-    byte_end: u32
+    byte_end: u32,
 ) -> ffi::TSQueryCaptureSlice {
-    let source_query = unsafe { slice::from_raw_parts(source_query as *const u8,
-                                                      source_query_len as usize) };
+    let source_query =
+        unsafe { slice::from_raw_parts(source_query as *const u8, source_query_len as usize) };
     let source_query = unsafe { str::from_utf8_unchecked(source_query) };
     let query = Query::new(language, source_query).expect("Query compilation failed");
-    let source_code = unsafe { slice::from_raw_parts(source_code as *const u8,
-                                                     source_code_len as usize) };
+    let source_code =
+        unsafe { slice::from_raw_parts(source_code as *const u8, source_code_len as usize) };
     let source_code = unsafe { str::from_utf8_unchecked(source_code) };
     let mut query_cursor = QueryCursor::new();
-    query_cursor.set_byte_range(std::ops::Range { start: byte_start as usize,
-                                                  end: byte_end as usize });
+    query_cursor.set_byte_range(std::ops::Range {
+        start: byte_start as usize,
+        end: byte_end as usize,
+    });
     let (mut captures, mut pattern_indices) = (Vec::new(), Vec::new());
-    for (mat, capture_index)
-        in query_cursor.captures (&query, node, source_code.as_bytes())
-    {
+    for (mat, capture_index) in query_cursor.captures(&query, node, source_code.as_bytes()) {
         let capture = mat.captures[capture_index];
         captures.push(ffi::TSQueryCapture {
             node: capture.node.0,
@@ -245,23 +245,24 @@ pub extern "C" fn ts_captures_new(
     ffi::TSQueryCaptureSlice {
         captures: slim_captures,
         pattern_indices: ptr,
-        len: len
+        len: len,
     }
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn ts_captures_free(
-    ffi::TSQueryCaptureSlice { captures, pattern_indices, len }:
-    ffi::TSQueryCaptureSlice,
+    ffi::TSQueryCaptureSlice {
+        captures,
+        pattern_indices,
+        len,
+    }: ffi::TSQueryCaptureSlice,
 ) {
     if !pattern_indices.is_null() {
-        let slice: &mut [u32] =
-            slice::from_raw_parts_mut(pattern_indices, len as usize);
+        let slice: &mut [u32] = slice::from_raw_parts_mut(pattern_indices, len as usize);
         drop(Box::from_raw(slice));
     }
     if !captures.is_null() {
-        let slice: &mut [ffi::TSQueryCapture] =
-            slice::from_raw_parts_mut(captures, len as usize);
+        let slice: &mut [ffi::TSQueryCapture] = slice::from_raw_parts_mut(captures, len as usize);
         drop(Box::from_raw(slice));
     }
 }
