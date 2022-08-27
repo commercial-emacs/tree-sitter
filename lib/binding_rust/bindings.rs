@@ -146,7 +146,8 @@ pub type TSQueryError = ::std::os::raw::c_uint;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct TSQueryCaptureSlice {
-    pub arr: *mut TSQueryCapture,
+    pub captures: *mut TSQueryCapture,
+    pub pattern_indices: *mut u32,
     pub len: u32,
 }
 extern "C" {

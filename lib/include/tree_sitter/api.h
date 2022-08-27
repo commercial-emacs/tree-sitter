@@ -143,7 +143,8 @@ typedef enum {
 } TSQueryError;
 
 typedef struct {
-  TSQueryCapture *arr;
+  TSQueryCapture *captures;
+  uint32_t *pattern_indices;
   uint32_t len;
 } TSQueryCaptureSlice;
 
