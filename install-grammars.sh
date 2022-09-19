@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-JQ=$(which jq || true)
-if [ -z "$JQ" ] ; then
-    echo "Requires jq https://github.com/stedolan/jq/wiki/Installation"
-    exit -1
-fi
-
 TS=$(which tree-sitter || true)
 if [ -z "$TS" ] || [[ ! $($TS --version) =~ "0.20.6-alpha" ]] ; then
     echo "Requires tree-sitter cli version 0.20.6-alpha"
@@ -73,18 +67,19 @@ EOF
 QDIR="$($TS dump-libpath)"/../queries
 mkdir -p "$QDIR"
 for repo in "${regenerate[@]}" ; do
-    scope=$(cat $repo/package.json | 2>/dev/null jq -r '."tree-sitter"[].scope')
-    if [ ! -z "$scope" ] ; then
-	if ( cd $repo ; 1>/dev/null 2>/dev/null $TS generate ) ; then
-	    if TREE_SITTER_DIR="$DIR" 1>/dev/null 2>/dev/null \
-			      $TS parse --scope "$scope" /dev/null ; then
-		if [ -f "$repo/queries/highlights.scm" ] ; then
-		    LANG=${repo##*-}
-		    mkdir -p "$QDIR/$LANG"
-		    cp -p "$repo/queries/highlights.scm" "$QDIR/$LANG"
-		fi
-	    fi
-	fi
+    if ( cd $repo ; 1>/dev/null 2>/dev/null $TS generate ) ; then
+        if (cd $repo ; 1>/dev/null 2>/dev/null $TS test ) ; then
+            if [ -f "$repo/queries/highlights.scm" ] ; then
+                LANG=${repo##*-}
+                mkdir -p "$QDIR/$LANG"
+                cp -p "$repo/queries/highlights.scm" "$QDIR/$LANG"
+            fi
+            if [ -f "$repo/queries/indents.scm" ] ; then
+                LANG=${repo##*-}
+                mkdir -p "$QDIR/$LANG"
+                cp -p "$repo/queries/indents.scm" "$QDIR/$LANG"
+            fi
+        fi
     fi
 done
 
