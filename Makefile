@@ -101,6 +101,7 @@ install: install-ci install-grammars
 	@echo "!!!                  USER NOTICE"
 	@echo "!!!"
 	@echo "!!! Add '$(DESTDIR)$(PCLIBDIR)' to PKG_CONFIG_PATH"
+	@echo "!!! Add '$(DESTDIR)$(LIBDIR)' to LD_LIBRARY_PATH"
 	@echo "!!!"
 
 .PHONY: clean
