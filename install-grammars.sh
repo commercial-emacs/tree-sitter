@@ -95,3 +95,6 @@ for dir in "$DIR/nvim-treesitter/queries"/* ; do
 	fi
     fi
 done
+
+# hack for now
+rsync -va "$DIR/../queries/" "$QDIR"
