@@ -17,8 +17,9 @@
 (init_declarator) @indent
 (compound_statement "}" @indent_end)
 
+"else" @dedent
+
 [
-  "else"
   ")"
   "}"
   (statement_identifier)
