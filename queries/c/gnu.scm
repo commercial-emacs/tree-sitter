@@ -41,7 +41,13 @@
 ((ERROR (parameter_declaration)) @aligned_indent
  (#set! "delimiter" "()"))
 ([(argument_list) (parameter_list)] @aligned_indent
-  (#set! "delimiter" "()"))
+ (#set! "delimiter" "()"))
 ((parenthesized_expression) @aligned_indent
+ (#set! "delimiter" "()"))
+((for_statement initializer: (_)) @aligned_indent
+ (#set! "delimiter" "()"))
+((for_statement condition: (_)) @aligned_indent
+ (#set! "delimiter" "()"))
+((for_statement update: (_)) @aligned_indent
  (#set! "delimiter" "()"))
 (comment) @auto
