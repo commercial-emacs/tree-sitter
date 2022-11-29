@@ -67,7 +67,7 @@ EOF
 QDIR="$($TS dump-libpath)"/../queries
 mkdir -p "$QDIR"
 for repo in "${regenerate[@]}" ; do
-    if ( cd $repo ; 1>/dev/null 2>/dev/null $TS generate ) ; then
+    if ( cd $repo ; 2>/dev/null ln -s $DIR ./node_modules || true ; 1>/dev/null 2>/dev/null $TS generate ) ; then
         if (cd $repo ; 1>/dev/null 2>/dev/null $TS test ) ; then
             if [ -f "$repo/queries/highlights.scm" ] ; then
                 LANG=${repo##*-}
