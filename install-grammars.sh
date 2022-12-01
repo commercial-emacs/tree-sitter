@@ -82,15 +82,14 @@ for repo in "${regenerate[@]}" ; do
 done
 
 for dir in "$DIR/nvim-treesitter/queries"/* ; do
-    LANG=$(basename $dir)
-    if [ -d "$QDIR/$LANG" ] ; then
-        indents="$dir/indents.scm"
-        if [ -f "$indents" ] ; then
-            if [ ! -f "$QDIR/$LANG/indents.scm" ] || \
-               [ "$indents" -nt "$QDIR/$LANG/indents.scm" ]; then
-                cp -p "$indents" "$QDIR/$LANG/indents.scm"
-            fi
-        fi
+    indents="$dir/indents.scm"
+    if [ -f "$indents" ] ; then
+        LANG=$(basename $dir)
+	mkdir -p "$QDIR/$LANG"
+	if [ ! -f "$QDIR/$LANG/indents.scm" ] || \
+	       [ "$indents" -nt "$QDIR/$LANG/indents.scm" ]; then
+	    cp -p "$indents" "$QDIR/$LANG/indents.scm"
+	fi
     fi
 done
 
