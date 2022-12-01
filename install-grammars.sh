@@ -85,11 +85,10 @@ for dir in "$DIR/nvim-treesitter/queries"/* ; do
     indents="$dir/indents.scm"
     if [ -f "$indents" ] ; then
         LANG=$(basename $dir)
-	if [ -d "$QDIR/$LANG" ] ; then
-	    if [ ! -f "$QDIR/$LANG/indents.scm" ] || \
-		   [ "$indents" -nt "$QDIR/$LANG/indents.scm" ]; then
-		cp -p "$indents" "$QDIR/$LANG/indents.scm"
-	    fi
+	mkdir -p "$QDIR/$LANG"
+	if [ ! -f "$QDIR/$LANG/indents.scm" ] || \
+	       [ "$indents" -nt "$QDIR/$LANG/indents.scm" ]; then
+	    cp -p "$indents" "$QDIR/$LANG/indents.scm"
 	fi
     fi
 done
