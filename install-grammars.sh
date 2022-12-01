@@ -91,13 +91,6 @@ for dir in "$DIR/nvim-treesitter/queries"/* ; do
                 cp -p "$indents" "$QDIR/$LANG/indents.scm"
             fi
         fi
-        highlights="$dir/highlights.scm"
-        if [ -f "$highlights" ] ; then
-            if [ ! -f "$QDIR/$LANG/highlights.scm" ] || \
-               [ "$highlights" -nt "$QDIR/$LANG/highlights.scm" ]; then
-                cp -p "$highlights" "$QDIR/$LANG/highlights.scm"
-            fi
-        fi
     fi
 done
 
