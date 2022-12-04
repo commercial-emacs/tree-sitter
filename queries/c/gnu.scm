@@ -1,5 +1,9 @@
 ; inherits: c
-
+[
+ (declaration)
+ (conditional_expression)
+ (return_statement)
+] @indent
 ((if_statement consequence: (_)) @indent)
 
 "else" @dedent
