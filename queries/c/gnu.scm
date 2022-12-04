@@ -6,7 +6,6 @@
 ] @indent
 
 ((if_statement consequence: (_)) @indent)
-((initializer_list members: (_)) @indent)
 
 "else" @dedent
 
