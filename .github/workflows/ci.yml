@@ -32,7 +32,7 @@ jobs:
           - ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       # Work around https://github.com/actions/cache/issues/403.
       - name: Use GNU tar
@@ -46,7 +46,7 @@ jobs:
 
       - name: Cache artifacts
         id: cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
@@ -65,7 +65,7 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Install emscripten
-        uses: mymindstorm/setup-emsdk@v10
+        uses: mymindstorm/setup-emsdk@v11
         with:
           version: ${{ env.EMSCRIPTEN_VERSION }}
 
@@ -119,11 +119,11 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Cache artifacts
         id: cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
