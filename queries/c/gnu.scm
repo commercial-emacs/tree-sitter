@@ -2,6 +2,7 @@
 [
  (declaration)
  (conditional_expression)
+ (do_statement)
  (return_statement)
 ] @indent
 
