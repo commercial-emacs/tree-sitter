@@ -426,7 +426,7 @@ TSRange *ts_tree_get_changed_ranges(
 /**
  * Write a DOT graph describing the syntax tree to the given file.
  */
-void ts_tree_print_dot_graph(const TSTree *, FILE *);
+void ts_tree_print_dot_graph(const TSTree *, int file_descriptor);
 
 /**
  * Get the node spanning the buffer byte.

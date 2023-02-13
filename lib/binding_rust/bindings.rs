@@ -357,6 +357,9 @@ extern "C" {
     pub fn ts_tree_language(arg1: *const TSTree) -> *const TSLanguage;
 }
 extern "C" {
+    #[doc = " Get the array of included ranges that was used to parse the syntax tree."]
+    #[doc = ""]
+    #[doc = " The returned pointer must be freed by the caller."]
     pub fn ts_tree_included_ranges(arg1: *const TSTree, length: *mut u32) -> *mut TSRange;
 }
 extern "C" {
