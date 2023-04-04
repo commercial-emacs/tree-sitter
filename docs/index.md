@@ -30,6 +30,8 @@ There are currently bindings that allow Tree-sitter to be used from the followin
 * [Kotlin](https://github.com/oxisto/kotlintree)
 * [Java](https://github.com/serenadeai/java-tree-sitter)
 
+By convention, bindings are named with the language first, eg. ruby-tree-sitter.
+
 ### Parsers
 
 * [Ada](https://github.com/briot/tree-sitter-ada)
@@ -146,6 +148,8 @@ There are currently bindings that allow Tree-sitter to be used from the followin
 * [YANG](https://github.com/Hubro/tree-sitter-yang)
 * [Zig](https://github.com/maxxnino/tree-sitter-zig)
 
+By convention, parsers are named with the language last, eg. tree-sitter-ruby.
+
 ### Talks on Tree-sitter
 
 * [Strange Loop 2018](https://www.thestrangeloop.com/2018/tree-sitter---a-new-parsing-system-for-programming-tools.html)
@@ -158,7 +162,7 @@ The design of Tree-sitter was greatly influenced by the following research paper
 
 - [Practical Algorithms for Incremental Software Development Environments](https://www2.eecs.berkeley.edu/Pubs/TechRpts/1997/CSD-97-946.pdf)
 - [Context Aware Scanning for Parsing Extensible Languages](https://www-users.cse.umn.edu/~evw/pubs/vanwyk07gpce/vanwyk07gpce.pdf)
-- [Efficient and Flexible Incremental Parsing](http://harmonia.cs.berkeley.edu/papers/twagner-parsing.pdf)
-- [Incremental Analysis of Real Programming Languages](http://harmonia.cs.berkeley.edu/papers/twagner-glr.pdf)
-- [Error Detection and Recovery in LR Parsers](http://what-when-how.com/compiler-writing/bottom-up-parsing-compiler-writing-part-13)
+- [Efficient and Flexible Incremental Parsing](https://harmonia.cs.berkeley.edu/papers/twagner-parsing.pdf)
+- [Incremental Analysis of Real Programming Languages](https://harmonia.cs.berkeley.edu/papers/twagner-glr.pdf)
+- [Error Detection and Recovery in LR Parsers](https://what-when-how.com/compiler-writing/bottom-up-parsing-compiler-writing-part-13)
 - [Error Recovery for LR Parsers](https://apps.dtic.mil/sti/pdfs/ADA043470.pdf)
