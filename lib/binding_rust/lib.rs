@@ -1995,6 +1995,14 @@ impl QueryCursor {
         }
         self
     }
+
+    #[doc(alias = "ts_query_cursor_set_max_start_depth")]
+    pub fn set_max_start_depth(&mut self, max_start_depth: u32) -> &mut Self {
+        unsafe {
+            ffi::ts_query_cursor_set_max_start_depth(self.ptr.as_ptr(), max_start_depth);
+        }
+        self
+    }
 }
 
 impl<'a, 'tree> QueryMatch<'a, 'tree> {
