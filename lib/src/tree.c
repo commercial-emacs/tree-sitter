@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include "tree_sitter/api.h"
 #include "./array.h"
 #include "./get_changed_ranges.h"
@@ -122,17 +123,6 @@ TSRange *ts_tree_get_changed_ranges(const TSTree *self, const TSTree *other, uin
   array_delete(&cursor2.stack);
   return result;
 }
-
-#ifdef _WIN32
-
-void ts_tree_print_dot_graph(const TSTree *self, int fd) {
-  (void)self;
-  (void)fd;
-}
-
-#else
-
-#include <unistd.h>
 
 void ts_tree_print_dot_graph(const TSTree *self, int fd) {
   FILE *file = fdopen(dup(fd), "a");
