@@ -390,6 +390,10 @@ extern "C" {
     ) -> *mut TSRange;
 }
 extern "C" {
+    #[doc = " Write a DOT graph describing the syntax tree to the given file."]
+    pub fn ts_tree_print_dot_graph(arg1: *const TSTree, file_descriptor: ::std::os::raw::c_int);
+}
+extern "C" {
     #[doc = " Get the node spanning the buffer byte."]
     pub fn ts_tree_node_at(arg1: *const TSTree, arg2: u32) -> TSNode;
 }
@@ -857,6 +861,15 @@ extern "C" {
 }
 extern "C" {
     pub fn ts_captures_free(arg1: TSQueryCaptureSlice);
+}
+extern "C" {
+    #[doc = " Set the maximum start depth for a cursor."]
+    #[doc = ""]
+    #[doc = " This prevents cursors from exploring children nodes at a certain depth."]
+    #[doc = " Note if a pattern includes many children, then they will still be checked."]
+    #[doc = ""]
+    #[doc = " Set to `0` to remove the maximum start depth."]
+    pub fn ts_query_cursor_set_max_start_depth(arg1: *mut TSQueryCursor, arg2: u32);
 }
 extern "C" {
     #[doc = " Get the number of distinct node types in the language."]
