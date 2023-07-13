@@ -8,7 +8,6 @@ if echo "#include <bits/stdint-uintn.h>" | 2>/dev/null cc -c -o /dev/null -xc - 
 fi
 
 bindgen                                        \
-  --size_t-is-usize                            \
   --no-layout-tests                            \
   --whitelist-type '^TS.*'                     \
   --whitelist-function '^ts_.*'                \
