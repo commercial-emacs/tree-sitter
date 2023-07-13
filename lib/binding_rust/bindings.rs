@@ -294,6 +294,10 @@ extern "C" {
     pub fn ts_node_symbol(arg1: TSNode) -> TSSymbol;
 }
 extern "C" {
+    #[doc = " Get the node's language."]
+    pub fn ts_node_language(arg1: TSNode) -> *const TSLanguage;
+}
+extern "C" {
     #[doc = " Get the node's start byte."]
     pub fn ts_node_start_byte(arg1: TSNode) -> u32;
 }

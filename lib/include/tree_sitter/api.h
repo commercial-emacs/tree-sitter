@@ -448,6 +448,11 @@ const char *ts_node_type(TSNode);
 TSSymbol ts_node_symbol(TSNode);
 
 /**
+ * Get the node's language.
+ */
+const TSLanguage *ts_node_language(TSNode);
+
+/**
  * Get the node's start byte.
  */
 uint32_t ts_node_start_byte(TSNode);
