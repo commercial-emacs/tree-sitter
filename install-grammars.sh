@@ -18,7 +18,8 @@ function git_refresh {
 	branch=$(git rev-parse --abbrev-ref HEAD)
 	commit=$(git rev-parse --short HEAD)
 	git fetch -f -q -u origin $branch:$branch --depth=1
-	if [[ ! $(git rev-parse --short HEAD) =~ "$commit" ]] ; then
+	if [[ ! $(git rev-parse --short FETCH_HEAD) =~ "$commit" ]] ; then
+	    git checkout -f -B $branch FETCH_HEAD
 	    regenerate+=( $repo )
 	fi
 	popd
