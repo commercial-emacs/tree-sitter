@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+JQ=$(which jq || true)
+if [ -z "$JQ" ] ; then
+    echo "Requires jq"
+    exit -1
+fi
 TS=$(which tree-sitter || true)
 if [ -z "$TS" ] || [[ ! $($TS --version) =~ "0.20.6-alpha" ]] ; then
     echo "Requires tree-sitter cli version 0.20.6-alpha"
@@ -9,23 +14,29 @@ fi
 function git_refresh {
     local repo
     local url
-    local branch
-    local commit
+    local old_commit
+    local fetch_commit
     repo=$1
     url=$2
     if [ -d "$repo" ] ; then
 	pushd $repo
-	branch=$(git rev-parse --abbrev-ref HEAD)
-	commit=$(git rev-parse --short HEAD)
-	git fetch -f -q -u origin $branch:$branch --depth=1
-	if [[ ! $(git rev-parse --short FETCH_HEAD) =~ "$commit" ]] ; then
-	    git checkout -f -B $branch FETCH_HEAD
+	old_commit=$(git rev-parse --short FETCH_HEAD)
+	fetch_commit=${3:-}
+	git fetch -f -q -u origin ${fetch_commit} --depth=1
+	if [[ ! $(git rev-parse --short FETCH_HEAD) =~ "${old_commit}" ]] ; then
+	    git checkout -f FETCH_HEAD
 	    regenerate+=( $repo )
 	fi
 	popd
     else
-	git clone --depth=1 --single-branch $url $repo
+	mkdir -p $repo
+	pushd $repo
+	git init
+	git remote add origin $url
+	git fetch --depth 1 origin ${3:-}
+	git checkout -f FETCH_HEAD
 	regenerate+=( $repo )
+	popd
     fi
 }
 
@@ -33,13 +44,23 @@ DIR=$(git rev-parse --show-toplevel)/grammars
 mkdir -p $DIR
 declare -a official=()
 declare -a regenerate=()
+git_refresh "$DIR/nvim-treesitter" \
+	    "https://github.com/nvim-treesitter/nvim-treesitter.git"
+
+declare -A pinned
+while IFS="=" read -r key value
+do
+    pinned[$key]="$value"
+done < <($JQ -r 'to_entries | map("\(.key)=\(.value|.revision)") | .[]' "${DIR}/nvim-treesitter/lockfile.json")
+
 IFS=$'\n'
 for url in $(egrep -o "https://github.com/tree-sitter/tree-sitter-[A-Za-z0-9-]+" \
 		   docs/index.md | sort -u) ; do
     unset IFS
     repo=$(basename $url)
     official+=( $repo )
-    git_refresh "$DIR/$repo" $url
+    LANG=${repo##*-}
+    git_refresh "$DIR/$repo" $url ${pinned[$LANG]}
 done
 unset IFS
 
@@ -49,13 +70,11 @@ for url in $(egrep -o "https://github.com/.+/tree-sitter-[A-Za-z0-9-]+" \
     unset IFS
     repo=$(basename $url)
     if [[ ! " ${official[*]} " =~ " ${repo} " ]] ; then
-	git_refresh "$DIR/$repo" $url
+        LANG=${repo##*-}
+	git_refresh "$DIR/$repo" $url ${pinned[$LANG]}
     fi
 done
 unset IFS
-
-git_refresh "$DIR/nvim-treesitter" \
-	    "https://github.com/nvim-treesitter/nvim-treesitter.git"
 
 cat <<EOF > "$DIR/config.json"
 {
