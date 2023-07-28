@@ -31,7 +31,7 @@ function git_refresh {
     else
 	mkdir -p $repo
 	pushd $repo
-	git init
+	git init -q
 	git remote add origin $url
 	git fetch --depth 1 origin ${3:-}
 	git checkout -f FETCH_HEAD
