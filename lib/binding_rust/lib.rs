@@ -396,11 +396,7 @@ impl Language {
                 field_name.len() as u32,
             )
         };
-        if id == 0 {
-            None
-        } else {
-            Some(FieldId::new(id).unwrap())
-        }
+        FieldId::new(id)
     }
 }
 
@@ -1128,7 +1124,26 @@ impl<'tree> Node<'tree> {
         cursor: &'a mut TreeCursor<'tree>,
     ) -> impl Iterator<Item = Node<'tree>> + 'a {
         let field_id = self.language().field_id_for_name(field_name);
-        self.children_by_field_id(field_id, cursor)
+        let mut done = field_id.is_none();
+        if !done {
+            cursor.reset(*self);
+            cursor.goto_first_child();
+        }
+        iter::from_fn(move || {
+            if !done {
+                while cursor.field_id() != field_id {
+                    if !cursor.goto_next_sibling() {
+                        return None;
+                    }
+                }
+                let result = cursor.node();
+                if !cursor.goto_next_sibling() {
+                    done = true;
+                }
+                return Some(result);
+            }
+            None
+        })
     }
 
     /// Iterate over this node's children with a given field id.
@@ -1136,15 +1151,15 @@ impl<'tree> Node<'tree> {
     /// See also [Node::children_by_field_name].
     pub fn children_by_field_id<'a>(
         &self,
-        field_id: Option<FieldId>,
+        field_id: FieldId,
         cursor: &'a mut TreeCursor<'tree>,
     ) -> impl Iterator<Item = Node<'tree>> + 'a {
         cursor.reset(*self);
         cursor.goto_first_child();
         let mut done = false;
         iter::from_fn(move || {
-            while !done {
-                while cursor.field_id() != field_id {
+            if !done {
+                while cursor.field_id() != Some(field_id) {
                     if !cursor.goto_next_sibling() {
                         return None;
                     }
@@ -1311,14 +1326,8 @@ impl<'a> TreeCursor<'a> {
     /// See also [field_name](TreeCursor::field_name).
     #[doc(alias = "ts_tree_cursor_current_field_id")]
     pub fn field_id(&self) -> Option<FieldId> {
-        unsafe {
-            let id = ffi::ts_tree_cursor_current_field_id(&self.0);
-            if id == 0 {
-                None
-            } else {
-                Some(FieldId::new(id).unwrap())
-            }
-        }
+        let id = unsafe { ffi::ts_tree_cursor_current_field_id(&self.0) };
+        FieldId::new(id)
     }
 
     /// Get the field name of this tree cursor's current node.
