@@ -346,11 +346,7 @@ impl Language {
     #[doc(alias = "ts_language_symbol_name")]
     pub fn node_kind_for_id(&self, id: u16) -> Option<&'static str> {
         let ptr = unsafe { ffi::ts_language_symbol_name(self.0, id) };
-        if ptr.is_null() {
-            None
-        } else {
-            Some(unsafe { CStr::from_ptr(ptr) }.to_str().unwrap())
-        }
+        (!ptr.is_null()).then(|| unsafe { CStr::from_ptr(ptr) }.to_str().unwrap())
     }
 
     /// Get the numeric id for the given node kind.
@@ -389,11 +385,7 @@ impl Language {
     #[doc(alias = "ts_language_field_name_for_id")]
     pub fn field_name_for_id(&self, field_id: u16) -> Option<&'static str> {
         let ptr = unsafe { ffi::ts_language_field_name_for_id(self.0, field_id) };
-        if ptr.is_null() {
-            None
-        } else {
-            Some(unsafe { CStr::from_ptr(ptr) }.to_str().unwrap())
-        }
+        (!ptr.is_null()).then(|| unsafe { CStr::from_ptr(ptr) }.to_str().unwrap())
     }
 
     /// Get the numerical id for the given field name.
@@ -438,11 +430,7 @@ impl Language {
     #[doc(alias = "ts_lookahead_iterator_new")]
     pub fn lookahead_iterator(&self, state: u16) -> Option<LookaheadIterator> {
         let ptr = unsafe { ffi::ts_lookahead_iterator_new(self.0, state) };
-        if ptr.is_null() {
-            None
-        } else {
-            Some(unsafe { LookaheadIterator::from_raw(ptr) })
-        }
+        (!ptr.is_null()).then(|| unsafe { LookaheadIterator::from_raw(ptr) })
     }
 }
 
@@ -480,11 +468,7 @@ impl Parser {
     #[doc(alias = "ts_parser_language")]
     pub fn language(&self) -> Option<Language> {
         let ptr = unsafe { ffi::ts_parser_language(self.0.as_ptr()) };
-        if ptr.is_null() {
-            None
-        } else {
-            Some(Language(ptr))
-        }
+        (!ptr.is_null()).then(|| Language(ptr))
     }
 
     /// Get the parser's current logger.
@@ -573,7 +557,7 @@ impl Parser {
         let bytes = text.as_ref();
         let len = bytes.len();
         self.parse_with(
-            &mut |i, _| if i < len { &bytes[i..] } else { &[] },
+            &mut |i, _| (i < len).then(|| &bytes[i..]).unwrap_or_default(),
             old_tree,
         )
     }
@@ -594,7 +578,7 @@ impl Parser {
         let code_points = input.as_ref();
         let len = code_points.len();
         self.parse_utf16_with(
-            &mut |i, _| if i < len { &code_points[i..] } else { &[] },
+            &mut |i, _| (i < len).then(|| &code_points[i..]).unwrap_or_default(),
             old_tree,
         )
     }
@@ -914,11 +898,7 @@ impl Clone for Tree {
 
 impl<'tree> Node<'tree> {
     fn new(node: ffi::TSNode) -> Option<Self> {
-        if node.id.is_null() {
-            None
-        } else {
-            Some(Node(node, PhantomData))
-        }
+        (!node.id.is_null()).then(|| Node(node, PhantomData))
     }
 
     /// Get a numeric id for this node that is unique.
@@ -1136,11 +1116,7 @@ impl<'tree> Node<'tree> {
     pub fn field_name_for_child(&self, child_index: u32) -> Option<&'static str> {
         unsafe {
             let ptr = ffi::ts_node_field_name_for_child(self.0, child_index);
-            if ptr.is_null() {
-                None
-            } else {
-                Some(CStr::from_ptr(ptr).to_str().unwrap())
-            }
+            (!ptr.is_null()).then(|| CStr::from_ptr(ptr).to_str().unwrap())
         }
     }
 
@@ -1407,11 +1383,7 @@ impl<'cursor> TreeCursor<'cursor> {
     pub fn field_name(&self) -> Option<&'static str> {
         unsafe {
             let ptr = ffi::ts_tree_cursor_current_field_name(&self.0);
-            if ptr.is_null() {
-                None
-            } else {
-                Some(CStr::from_ptr(ptr).to_str().unwrap())
-            }
+            (!ptr.is_null()).then(|| CStr::from_ptr(ptr).to_str().unwrap())
         }
     }
 
@@ -1504,11 +1476,7 @@ impl<'cursor> TreeCursor<'cursor> {
     pub fn goto_first_child_for_byte(&mut self, index: usize) -> Option<usize> {
         let result =
             unsafe { ffi::ts_tree_cursor_goto_first_child_for_byte(&mut self.0, index as u32) };
-        if result < 0 {
-            None
-        } else {
-            Some(result as usize)
-        }
+        (result >= 0).then_some(result as usize)
     }
 
     /// Move this cursor to the first child of its current node that extends beyond
@@ -1520,11 +1488,7 @@ impl<'cursor> TreeCursor<'cursor> {
     pub fn goto_first_child_for_point(&mut self, point: Point) -> Option<usize> {
         let result =
             unsafe { ffi::ts_tree_cursor_goto_first_child_for_point(&mut self.0, point.into()) };
-        if result < 0 {
-            None
-        } else {
-            Some(result as usize)
-        }
+        (result >= 0).then_some(result as usize)
     }
 
     /// Re-initialize this tree cursor to start at a different node.
@@ -1609,11 +1573,8 @@ impl Iterator for LookaheadNamesIterator<'_> {
 
     #[doc(alias = "ts_lookahead_iterator_advance")]
     fn next(&mut self) -> Option<Self::Item> {
-        if !(unsafe { ffi::ts_lookahead_iterator_advance(self.0 .0.as_ptr()) }) {
-            None
-        } else {
-            Some(self.0.current_symbol_name())
-        }
+        unsafe { ffi::ts_lookahead_iterator_advance(self.0 .0.as_ptr()) }
+            .then(|| self.0.current_symbol_name())
     }
 }
 
@@ -1623,11 +1584,8 @@ impl Iterator for LookaheadIterator {
     #[doc(alias = "ts_lookahead_iterator_advance")]
     fn next(&mut self) -> Option<Self::Item> {
         // the first symbol is always `0` so we can safely skip it
-        if !(unsafe { ffi::ts_lookahead_iterator_advance(self.0.as_ptr()) }) {
-            None
-        } else {
-            Some(self.current_symbol())
-        }
+        unsafe { ffi::ts_lookahead_iterator_advance(self.0.as_ptr()) }
+            .then(|| self.current_symbol())
     }
 }
 
@@ -1795,11 +1753,9 @@ impl Query {
                 let mut length = 0u32;
                 let raw_predicates =
                     ffi::ts_query_predicates_for_pattern(ptr, i as u32, &mut length as *mut u32);
-                if length > 0 {
-                    slice::from_raw_parts(raw_predicates, length as usize)
-                } else {
-                    &[]
-                }
+                (length > 0)
+                    .then(|| slice::from_raw_parts(raw_predicates, length as usize))
+                    .unwrap_or_default()
             };
 
             let byte_offset = unsafe { ffi::ts_query_start_byte_for_pattern(ptr, i as u32) };
@@ -2196,7 +2152,7 @@ impl QueryCursor {
         text_provider: T,
     ) -> QueryCaptures<'query, 'tree, T, I> {
         let ptr = self.ptr.as_ptr();
-        unsafe { ffi::ts_query_cursor_exec(self.ptr.as_ptr(), query.ptr.as_ptr(), node.0) };
+        unsafe { ffi::ts_query_cursor_exec(ptr, query.ptr.as_ptr(), node.0) };
         QueryCaptures {
             ptr,
             query,
@@ -2271,13 +2227,9 @@ impl<'tree> QueryMatch<'_, 'tree> {
         &self,
         capture_ix: u32,
     ) -> impl Iterator<Item = Node<'tree>> + '_ {
-        self.captures.iter().filter_map(move |capture| {
-            if capture.index == capture_ix {
-                Some(capture.node)
-            } else {
-                None
-            }
-        })
+        self.captures
+            .iter()
+            .filter_map(move |capture| (capture.index == capture_ix).then(|| capture.node))
     }
 
     fn new(m: ffi::TSQueryMatch, cursor: *mut ffi::TSQueryCursor) -> Self {
@@ -2285,16 +2237,14 @@ impl<'tree> QueryMatch<'_, 'tree> {
             cursor,
             id: m.id,
             pattern_index: m.pattern_index as usize,
-            captures: if m.capture_count > 0 {
-                unsafe {
+            captures: (m.capture_count > 0)
+                .then(|| unsafe {
                     slice::from_raw_parts(
                         m.captures as *const QueryCapture<'tree>,
                         m.capture_count as usize,
                     )
-                }
-            } else {
-                &[]
-            },
+                })
+                .unwrap_or_default(),
         }
     }
 
@@ -2331,7 +2281,7 @@ impl<'tree> QueryMatch<'_, 'tree> {
                 } else if let Some(ref first_chunk) = self.first_chunk {
                     first_chunk.as_ref()
                 } else {
-                    &[]
+                    Default::default()
                 }
             }
         }
@@ -2621,7 +2571,7 @@ impl<'a> Iterator for LossyUtf8<'a> {
         }
         match std::str::from_utf8(self.bytes) {
             Ok(valid) => {
-                self.bytes = &[];
+                self.bytes = Default::default();
                 Some(valid)
             }
             Err(error) => {
