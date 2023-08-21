@@ -820,6 +820,3 @@ extern "C" {
         new_free: ::std::option::Option<unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void)>,
     );
 }
-
-pub const TREE_SITTER_LANGUAGE_VERSION: usize = 14;
-pub const TREE_SITTER_MIN_COMPATIBLE_LANGUAGE_VERSION: usize = 13;
