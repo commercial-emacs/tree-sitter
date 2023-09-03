@@ -135,11 +135,11 @@ pub enum CaptureQuantifier {
 impl From<ffi::TSQuantifier> for CaptureQuantifier {
     fn from(value: ffi::TSQuantifier) -> Self {
         match value {
-            ffi::TSQuantifier_TSQuantifierZero => CaptureQuantifier::Zero,
-            ffi::TSQuantifier_TSQuantifierZeroOrOne => CaptureQuantifier::ZeroOrOne,
-            ffi::TSQuantifier_TSQuantifierZeroOrMore => CaptureQuantifier::ZeroOrMore,
-            ffi::TSQuantifier_TSQuantifierOne => CaptureQuantifier::One,
-            ffi::TSQuantifier_TSQuantifierOneOrMore => CaptureQuantifier::OneOrMore,
+            ffi::TSQuantifierZero => CaptureQuantifier::Zero,
+            ffi::TSQuantifierZeroOrOne => CaptureQuantifier::ZeroOrOne,
+            ffi::TSQuantifierZeroOrMore => CaptureQuantifier::ZeroOrMore,
+            ffi::TSQuantifierOne => CaptureQuantifier::One,
+            ffi::TSQuantifierOneOrMore => CaptureQuantifier::OneOrMore,
             _ => panic!("Unrecognized quantifier: {}", value),
         }
     }
@@ -374,14 +374,12 @@ impl Language {
     /// Check if the node type for the given numerical id is named (as opposed
     /// to an anonymous node type).
     pub fn node_kind_is_named(&self, id: u16) -> bool {
-        unsafe { ffi::ts_language_symbol_type(self.0, id) == ffi::TSSymbolType_TSSymbolTypeRegular }
+        unsafe { ffi::ts_language_symbol_type(self.0, id) == ffi::TSSymbolTypeRegular }
     }
 
     #[doc(alias = "ts_language_symbol_type")]
     pub fn node_kind_is_visible(&self, id: u16) -> bool {
-        unsafe {
-            ffi::ts_language_symbol_type(self.0, id) <= ffi::TSSymbolType_TSSymbolTypeAnonymous
-        }
+        unsafe { ffi::ts_language_symbol_type(self.0, id) <= ffi::TSSymbolTypeAnonymous }
     }
 
     /// Get the number of distinct field names in this language.
@@ -507,7 +505,7 @@ impl Parser {
             ) {
                 let callback = (payload as *mut Logger).as_mut().unwrap();
                 if let Ok(message) = CStr::from_ptr(c_message).to_str() {
-                    let log_type = if c_log_type == ffi::TSLogType_TSLogTypeParse {
+                    let log_type = if c_log_type == ffi::TSLogTypeParse {
                         LogType::Parse
                     } else {
                         LogType::Lex
@@ -633,7 +631,7 @@ impl Parser {
         let c_input = ffi::TSInput {
             payload: &mut payload as *mut (&mut F, Option<T>) as *mut c_void,
             read: Some(read::<T, F>),
-            encoding: ffi::TSInputEncoding_TSInputEncodingUTF8,
+            encoding: ffi::TSInputEncodingUTF8,
         };
 
         let c_old_tree = old_tree.map_or(ptr::null_mut(), |t| t.0.as_ptr());
@@ -689,7 +687,7 @@ impl Parser {
         let c_input = ffi::TSInput {
             payload: &mut payload as *mut (&mut F, Option<T>) as *mut c_void,
             read: Some(read::<T, F>),
-            encoding: ffi::TSInputEncoding_TSInputEncodingUTF16,
+            encoding: ffi::TSInputEncodingUTF16,
         };
 
         let c_old_tree = old_tree.map_or(ptr::null_mut(), |t| t.0.as_ptr());
@@ -1630,7 +1628,7 @@ impl Query {
 
         // On failure, build an error based on the error code and offset.
         if ptr.is_null() {
-            if error_type == ffi::TSQueryError_TSQueryErrorLanguage {
+            if error_type == ffi::TSQueryErrorLanguage {
                 return Err(QueryError {
                     row: 0,
                     column: 0,
@@ -1662,18 +1660,16 @@ impl Query {
             let message;
             match error_type {
                 // Error types that report names
-                ffi::TSQueryError_TSQueryErrorNodeType
-                | ffi::TSQueryError_TSQueryErrorField
-                | ffi::TSQueryError_TSQueryErrorCapture => {
+                ffi::TSQueryErrorNodeType | ffi::TSQueryErrorField | ffi::TSQueryErrorCapture => {
                     let suffix = source.split_at(offset).1;
                     let end_offset = suffix
                         .find(|c| !char::is_alphanumeric(c) && c != '_' && c != '-')
                         .unwrap_or(suffix.len());
                     message = suffix.split_at(end_offset).0.to_string();
                     kind = match error_type {
-                        ffi::TSQueryError_TSQueryErrorNodeType => QueryErrorKind::NodeType,
-                        ffi::TSQueryError_TSQueryErrorField => QueryErrorKind::Field,
-                        ffi::TSQueryError_TSQueryErrorCapture => QueryErrorKind::Capture,
+                        ffi::TSQueryErrorNodeType => QueryErrorKind::NodeType,
+                        ffi::TSQueryErrorField => QueryErrorKind::Field,
+                        ffi::TSQueryErrorCapture => QueryErrorKind::Capture,
                         _ => unreachable!(),
                     };
                 }
@@ -1686,7 +1682,7 @@ impl Query {
                         "Unexpected EOF".to_string()
                     };
                     kind = match error_type {
-                        ffi::TSQueryError_TSQueryErrorStructure => QueryErrorKind::Structure,
+                        ffi::TSQueryErrorStructure => QueryErrorKind::Structure,
                         _ => QueryErrorKind::Syntax,
                     };
                 }
@@ -1782,20 +1778,21 @@ impl Query {
                 .filter(|(_, c)| *c == '\n')
                 .count();
 
-            let type_done = ffi::TSQueryPredicateStepType_TSQueryPredicateStepTypeDone;
-            let type_capture = ffi::TSQueryPredicateStepType_TSQueryPredicateStepTypeCapture;
-            let type_string = ffi::TSQueryPredicateStepType_TSQueryPredicateStepTypeString;
+            use ffi::TSQueryPredicateStepType as T;
+            const TYPE_DONE: T = ffi::TSQueryPredicateStepTypeDone;
+            const TYPE_CAPTURE: T = ffi::TSQueryPredicateStepTypeCapture;
+            const TYPE_STRING: T = ffi::TSQueryPredicateStepTypeString;
 
             let mut text_predicates = Vec::new();
             let mut property_predicates = Vec::new();
             let mut property_settings = Vec::new();
             let mut general_predicates = Vec::new();
-            for p in predicate_steps.split(|s| s.type_ == type_done) {
+            for p in predicate_steps.split(|s| s.type_ == TYPE_DONE) {
                 if p.is_empty() {
                     continue;
                 }
 
-                if p[0].type_ != type_string {
+                if p[0].type_ != TYPE_STRING {
                     return Err(predicate_error(
                         row,
                         format!(
@@ -1818,7 +1815,7 @@ impl Query {
                             ),
                             ));
                         }
-                        if p[1].type_ != type_capture {
+                        if p[1].type_ != TYPE_CAPTURE {
                             return Err(predicate_error(row, format!(
                                 "First argument to #eq? predicate must be a capture name. Got literal \"{}\".",
                                 string_values[p[1].value_id as usize],
@@ -1831,7 +1828,7 @@ impl Query {
                             "any-eq?" | "any-not-eq?" => false,
                             _ => unreachable!(),
                         };
-                        text_predicates.push(if p[2].type_ == type_capture {
+                        text_predicates.push(if p[2].type_ == TYPE_CAPTURE {
                             TextPredicateCapture::EqCapture(
                                 p[1].value_id,
                                 p[2].value_id,
@@ -1855,13 +1852,13 @@ impl Query {
                                 p.len() - 1
                             )));
                         }
-                        if p[1].type_ != type_capture {
+                        if p[1].type_ != TYPE_CAPTURE {
                             return Err(predicate_error(row, format!(
                                 "First argument to #match? predicate must be a capture name. Got literal \"{}\".",
                                 string_values[p[1].value_id as usize],
                             )));
                         }
-                        if p[2].type_ == type_capture {
+                        if p[2].type_ == TYPE_CAPTURE {
                             return Err(predicate_error(row, format!(
                                 "Second argument to #match? predicate must be a literal. Got capture @{}.",
                                 capture_names[p[2].value_id as usize],
@@ -1912,7 +1909,7 @@ impl Query {
                                 p.len() - 1
                             )));
                         }
-                        if p[1].type_ != type_capture {
+                        if p[1].type_ != TYPE_CAPTURE {
                             return Err(predicate_error(row, format!(
                                 "First argument to #any-of? predicate must be a capture name. Got literal \"{}\".",
                                 string_values[p[1].value_id as usize],
@@ -1922,7 +1919,7 @@ impl Query {
                         let is_positive = operator_name == "any-of?";
                         let mut values = Vec::new();
                         for arg in &p[2..] {
-                            if arg.type_ == type_capture {
+                            if arg.type_ == TYPE_CAPTURE {
                                 return Err(predicate_error(row, format!(
                                     "Arguments to #any-of? predicate must be literals. Got capture @{}.",
                                     capture_names[arg.value_id as usize],
@@ -1946,7 +1943,7 @@ impl Query {
                         args: p[1..]
                             .iter()
                             .map(|a| {
-                                if a.type_ == type_capture {
+                                if a.type_ == TYPE_CAPTURE {
                                     QueryPredicateArg::Capture(a.value_id)
                                 } else {
                                     QueryPredicateArg::String(
@@ -2114,7 +2111,7 @@ impl Query {
         let mut value = None;
 
         for arg in args {
-            if arg.type_ == ffi::TSQueryPredicateStepType_TSQueryPredicateStepTypeCapture {
+            if arg.type_ == ffi::TSQueryPredicateStepTypeCapture {
                 if capture_id.is_some() {
                     return Err(predicate_error(
                         row,
