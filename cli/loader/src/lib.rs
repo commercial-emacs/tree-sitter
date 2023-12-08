@@ -867,6 +867,21 @@ impl Loader {
         self.debug_build = flag;
     }
 
+    #[cfg(feature = "wasm")]
+    pub fn use_wasm(&mut self, engine: tree_sitter::wasmtime::Engine) {
+        *self.wasm_store.lock().unwrap() = Some(tree_sitter::WasmStore::new(engine).unwrap())
+    }
+
+    pub fn get_scanner_path(&self, src_path: &Path) -> Option<PathBuf> {
+        let mut path = src_path.join("scanner.c");
+        for extension in ["c", "cc", "cpp"] {
+            path.set_extension(extension);
+            if path.exists() {
+                return Some(path);
+            }
+        }
+        None
+
     pub fn parser_lib_path<'a>(&'a self) -> Cow<'a, str> {
         self.parser_lib_path.to_string_lossy()
     }
