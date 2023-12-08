@@ -399,17 +399,20 @@ pub fn offset_for_position(input: &[u8], position: Point) -> Result<usize> {
     Ok(offset + position.column)
 }
 
-fn position_for_offset(input: &[u8], offset: usize) -> Point {
-    let mut result = Point { row: 0, column: 0 };
-
-    for &c in input[0..offset].iter().rev() {
-        if c != b'\n' && result.row == 0 {
-            result.column += 1;
-        }
-        if c == b'\n' {
-            result.row += 1;
-        }
+pub fn position_for_offset(input: &[u8], offset: usize) -> Result<Point> {
+    if offset > input.len() {
+        return Err(anyhow!("Failed to address an offset: {offset}"));
     }
-
-    result
+    let mut result = Point { row: 0, column: 0 };
+    let mut last = 0;
+    for pos in memchr::memchr_iter(b'\n', &input[..offset]) {
+        result.row += 1;
+        last = pos;
+    }
+    result.column = if result.row > 0 {
+        offset - last - 1
+    } else {
+        offset
+    };
+    Ok(result)
 }
