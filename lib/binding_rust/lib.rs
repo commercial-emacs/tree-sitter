@@ -11,6 +11,7 @@ use std::{
     fmt, hash, iter,
     marker::PhantomData,
     mem::{forget, MaybeUninit},
+    num::NonZeroU16,
     ops,
     os::raw::{c_char, c_void},
     ptr::{self, NonNull},

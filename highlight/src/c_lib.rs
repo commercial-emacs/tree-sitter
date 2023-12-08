@@ -276,7 +276,7 @@ pub unsafe extern "C" fn ts_highlight_buffer_line_count(this: *const TSHighlight
 ///
 /// `this` must be a non-null pointer to a [`TSHighlighter`] instance created by [`ts_highlighter_new`]
 #[no_mangle]
-pub extern "C" fn ts_highlighter_return_highlights(
+pub unsafe extern "C" fn ts_highlighter_return_highlights(
     this: *const TSHighlighter,
     scope_name: *const c_char,
     source_code: *const c_char,
@@ -338,7 +338,7 @@ pub unsafe extern "C" fn ts_highlighter_free_highlights(
 }
 
 #[no_mangle]
-pub extern "C" fn ts_highlighter_highlight(
+pub unsafe extern "C" fn ts_highlighter_highlight(
     this: *const TSHighlighter,
     scope_name: *const c_char,
     source_code: *const c_char,

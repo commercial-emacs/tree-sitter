@@ -202,6 +202,7 @@ impl Highlighter {
         assert_ne!(layers.len(), 0);
         Ok(HighlightIter {
             source,
+            language_name: &config.language_name,
             byte_offset: 0,
             injection_callback: move |_| None,
             cancellation_flag: None,
@@ -210,6 +211,7 @@ impl Highlighter {
             layers: layers,
             next_event: None,
             last_highlight_range: None,
+            apply_all_captures: config.apply_all_captures,
         })
     }
 
