@@ -6,8 +6,8 @@ if [ -z "$JQ" ] ; then
     exit -1
 fi
 TS=$(which tree-sitter || true)
-if [ -z "$TS" ] || [[ ! $($TS --version) =~ "0.20.6-alpha" ]] ; then
-    echo "Requires tree-sitter cli version 0.20.6-alpha"
+if [ -z "$TS" ] || [[ ! $($TS --version) =~ "0.20.8-alpha" ]] ; then
+    echo "Requires tree-sitter cli version 0.20.8-alpha"
     exit -1
 fi
 
