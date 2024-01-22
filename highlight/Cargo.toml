@@ -15,7 +15,7 @@ repository = "https://github.com/tree-sitter/tree-sitter"
 rust-version.workspace = true
 
 [lib]
-crate-type = ["lib", "staticlib"]
+crate-type = ["lib", "cdylib"]
 
 [dependencies]
 lazy_static = "1.4.0"

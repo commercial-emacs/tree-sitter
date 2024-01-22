@@ -57,7 +57,7 @@ endif
 .PHONY: all
 all: libtree-sitter.$(SOEXTVER)
 
-target/release/libtree_sitter_highlight.a: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
+target/release/libtree_sitter_highlight.so: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
 	( cd highlight ; cargo build --release )
 
 libtree-sitter.$(SOEXTVER): $(OBJ)
@@ -69,7 +69,7 @@ ifneq ($(STRIP),)
 endif
 
 .PHONY: install-highlight
-install-highlight: target/release/libtree_sitter_highlight.a
+install-highlight: target/release/libtree_sitter_highlight.so
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
 	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
