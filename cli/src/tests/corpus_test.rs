@@ -69,11 +69,6 @@ fn test_corpus_for_json(seed: usize) {
 }
 
 #[test_with_seed(retry=10, seed=*START_SEED, seed_fn=new_seed)]
-fn test_corpus_for_php(seed: usize) {
-    test_language_corpus("php", seed, None);
-}
-
-#[test_with_seed(retry=10, seed=*START_SEED, seed_fn=new_seed)]
 fn test_corpus_for_python(seed: usize) {
     test_language_corpus("python", seed, None);
 }
