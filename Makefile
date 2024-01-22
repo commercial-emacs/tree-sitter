@@ -43,12 +43,12 @@ ifeq ($(shell uname),Darwin)
 	SOEXT = dylib
 	SOEXTVER_MAJOR = $(SONAME_MAJOR).dylib
 	SOEXTVER = $(SONAME_MAJOR).$(SONAME_MINOR).dylib
-	LINKSHARED += -dynamiclib -Wl,-install_name,$(LIBDIR)/libtree-sitter.$(SONAME_MAJOR).dylib
+	LINKSHARED += -dynamiclib -Wl,-install_name,$(LIBDIR)/libtree-sitter.$(SONAME_MAJOR).$(SOEXT)
 else
 	SOEXT = so
 	SOEXTVER_MAJOR = so.$(SONAME_MAJOR)
 	SOEXTVER = so.$(SONAME_MAJOR).$(SONAME_MINOR)
-	LINKSHARED += -shared -Wl,-soname,libtree-sitter.so.$(SONAME_MAJOR)
+	LINKSHARED += -shared -Wl,-soname,libtree-sitter.$(SOEXT).$(SONAME_MAJOR)
 endif
 ifneq (,$(filter $(shell uname),FreeBSD NetBSD DragonFly))
 	PCLIBDIR := $(PREFIX)/libdata/pkgconfig
@@ -57,7 +57,7 @@ endif
 .PHONY: all
 all: libtree-sitter.$(SOEXTVER)
 
-target/release/libtree_sitter_highlight.so: highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
+target/release/libtree_sitter_highlight.$(SOEXT): highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
 	( cd highlight ; cargo build --release )
 
 libtree-sitter.$(SOEXTVER): $(OBJ)
@@ -69,7 +69,7 @@ ifneq ($(STRIP),)
 endif
 
 .PHONY: install-highlight
-install-highlight: target/release/libtree_sitter_highlight.so
+install-highlight: target/release/libtree_sitter_highlight.$(SOEXT)
 	install -d '$(DESTDIR)$(LIBDIR)'
 	install -m755 $< '$(DESTDIR)$(LIBDIR)'/$(<F)
 	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
