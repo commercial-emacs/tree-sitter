@@ -155,7 +155,7 @@ fn test_language_corpus(
         let passed = allocations::record(|| {
             let mut log_session = None;
             let mut parser = get_parser(&mut log_session, "log.html");
-            parser.set_language(language).unwrap();
+            parser.set_language(&language).unwrap();
             set_included_ranges(&mut parser, &test.input, test.template_delimiters);
 
             let tree = parser.parse(&test.input, None).unwrap();
@@ -181,7 +181,7 @@ fn test_language_corpus(
         }
 
         let mut parser = Parser::new();
-        parser.set_language(language).unwrap();
+        parser.set_language(&language).unwrap();
         let tree = parser.parse(&test.input, None).unwrap();
         drop(parser);
 
@@ -191,7 +191,7 @@ fn test_language_corpus(
                 let mut rand = Rand::new(seed);
                 let mut log_session = None;
                 let mut parser = get_parser(&mut log_session, "log.html");
-                parser.set_language(language).unwrap();
+                parser.set_language(&language).unwrap();
                 let mut tree = tree.clone();
                 let mut input = test.input.clone();
 
@@ -373,7 +373,7 @@ fn test_feature_corpus_files() {
                 let passed = allocations::record(|| {
                     let mut log_session = None;
                     let mut parser = get_parser(&mut log_session, "log.html");
-                    parser.set_language(language).unwrap();
+                    parser.set_language(&language).unwrap();
                     let tree = parser.parse(&test.input, None).unwrap();
                     let mut actual_output = tree.root_node().to_sexp();
                     if !test.has_fields {
