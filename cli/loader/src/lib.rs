@@ -40,9 +40,8 @@ where
     D: Deserializer<'de>,
 {
     let paths = Vec::<PathBuf>::deserialize(deserializer)?;
-    let home = match dirs::home_dir() {
-        Some(home) => home,
-        None => return Ok(paths),
+    let Some(home) = dirs::home_dir() else {
+        return Ok(paths);
     };
     let standardized = paths
         .into_iter()
@@ -62,9 +61,10 @@ fn standardize_path(path: PathBuf, home: &Path) -> PathBuf {
 }
 
 impl Config {
-    pub fn initial() -> Config {
+    #[must_use]
+    pub fn initial() -> Self {
         let home_dir = dirs::home_dir().expect("Cannot determine home directory");
-        Config {
+        Self {
             parser_directories: vec![
                 home_dir.join("github"),
                 home_dir.join("src"),
@@ -78,7 +78,7 @@ impl Config {
 const DYLIB_EXTENSION: &str = "so";
 
 #[cfg(windows)]
-const DYLIB_EXTENSION: &'static str = "dll";
+const DYLIB_EXTENSION: &str = "dll";
 
 const BUILD_TARGET: &str = env!("BUILD_TARGET");
 
@@ -123,15 +123,16 @@ impl Loader {
         let parser_lib_path = match env::var("TREE_SITTER_LIBDIR") {
             Ok(path) => PathBuf::from(path),
             _ => dirs::cache_dir()
-                .ok_or(anyhow!("Cannot determine cache directory"))?
+                .ok_or_else(|| anyhow!("Cannot determine cache directory"))?
                 .join("tree-sitter")
                 .join("lib"),
         };
         Ok(Self::with_parser_lib_path(parser_lib_path))
     }
 
+    #[must_use]
     pub fn with_parser_lib_path(parser_lib_path: PathBuf) -> Self {
-        Loader {
+        Self {
             parser_lib_path,
             languages_by_id: Vec::new(),
             language_configurations: Vec::new(),
@@ -153,6 +154,7 @@ impl Loader {
         highlights.extend(names.iter().cloned());
     }
 
+    #[must_use]
     pub fn highlight_names(&self) -> Vec<String> {
         self.highlight_names.lock().unwrap().clone()
     }
@@ -189,7 +191,7 @@ impl Loader {
                 .iter()
                 .map(|c| c.language_id)
                 .collect::<Vec<_>>();
-            language_ids.sort();
+            language_ids.sort_unstable();
             language_ids.dedup();
             language_ids
                 .into_iter()
@@ -200,6 +202,7 @@ impl Loader {
         }
     }
 
+    #[must_use]
     pub fn get_all_language_configurations(&self) -> Vec<(&LanguageConfiguration, &Path)> {
         self.language_configurations
             .iter()
@@ -240,17 +243,14 @@ impl Loader {
 
         if let Some(configuration_ids) = configuration_ids {
             if !configuration_ids.is_empty() {
-                let configuration;
-
-                // If there is only one language configuration, then use it.
-                if configuration_ids.len() == 1 {
-                    configuration = &self.language_configurations[configuration_ids[0]];
+                let configuration = if configuration_ids.len() == 1 {
+                    &self.language_configurations[configuration_ids[0]]
                 }
                 // If multiple language configurations match, then determine which
                 // one to use by applying the configurations' content regexes.
                 else {
-                    let file_contents = fs::read(path)
-                        .with_context(|| format!("Failed to read path {:?}", path))?;
+                    let file_contents =
+                        fs::read(path).with_context(|| format!("Failed to read path {path:?}"))?;
                     let file_contents = String::from_utf8_lossy(&file_contents);
                     let mut best_score = -2isize;
                     let mut best_configuration_id = None;
@@ -280,8 +280,8 @@ impl Loader {
                         }
                     }
 
-                    configuration = &self.language_configurations[best_configuration_id.unwrap()];
-                }
+                    &self.language_configurations[best_configuration_id.unwrap()]
+                };
 
                 let language = self.language_for_id(configuration.language_id)?;
                 return Ok(Some((language, configuration)));
@@ -365,7 +365,7 @@ impl Loader {
         library_path.set_extension(DYLIB_EXTENSION);
 
         let parser_path = src_path.join("parser.c");
-        let scanner_path = self.get_scanner_path(&src_path);
+        let scanner_path = self.get_scanner_path(src_path);
 
         #[cfg(feature = "wasm")]
         if self.wasm_store.lock().unwrap().is_some() {
@@ -383,7 +383,7 @@ impl Loader {
                     src_path,
                     scanner_path
                         .as_ref()
-                        .and_then(|p| p.strip_prefix(&src_path).ok()),
+                        .and_then(|p| p.strip_prefix(src_path).ok()),
                     &library_path,
                     false,
                 )?;
@@ -404,15 +404,15 @@ impl Loader {
             }
 
             let library = unsafe { Library::new(&library_path) }
-                .with_context(|| format!("Error opening dynamic library {:?}", &library_path))?;
+                .with_context(|| format!("Error opening dynamic library {library_path:?}"))?;
             let language = unsafe {
                 let language_fn: Symbol<unsafe extern "C" fn() -> Language> = library
                     .get(language_fn_name.as_bytes())
-                    .with_context(|| format!("Failed to load symbol {}", language_fn_name))?;
+                    .with_context(|| format!("Failed to load symbol {language_fn_name}"))?;
                 language_fn()
             };
             mem::forget(library);
-            return Ok(language);
+            Ok(language)
         }
     }
 
@@ -438,10 +438,12 @@ impl Loader {
         }
 
         if compiler.is_like_msvc() {
-            command.args(&["/nologo", "/LD"]);
-            header_paths.iter().for_each(|path| {
+            command.args(["/nologo", "/LD"]);
+
+            for path in header_paths {
                 command.arg(format!("/I{}", path.to_string_lossy()));
-            });
+            }
+
             if self.debug_build {
                 command.arg("/Od");
             } else {
@@ -460,11 +462,11 @@ impl Loader {
                 .arg("-fno-exceptions")
                 .arg("-g")
                 .arg("-o")
-                .arg(&library_path);
+                .arg(library_path);
 
-            header_paths.iter().for_each(|path| {
+            for path in header_paths {
                 command.arg(format!("-I{}", path.to_string_lossy()));
-            });
+            }
 
             if !cfg!(windows) {
                 command.arg("-fPIC");
@@ -506,7 +508,7 @@ impl Loader {
             let command = Command::new("nm")
                 .arg("-W")
                 .arg("-U")
-                .arg(&library_path)
+                .arg(library_path)
                 .output();
             if let Ok(output) = command {
                 if output.status.success() {
@@ -689,6 +691,7 @@ impl Loader {
         Ok(())
     }
 
+    #[must_use]
     pub fn highlight_config_for_injection_string<'a>(
         &'a self,
         string: &str,
@@ -696,10 +699,7 @@ impl Loader {
     ) -> Option<&'a HighlightConfiguration> {
         match self.language_configuration_for_injection_string(string) {
             Err(e) => {
-                eprintln!(
-                    "Failed to load language for injection string '{}': {}",
-                    string, e
-                );
+                eprintln!("Failed to load language for injection string '{string}': {e}",);
                 None
             }
             Ok(None) => None,
@@ -707,8 +707,7 @@ impl Loader {
                 match configuration.highlight_config(language, apply_all_captures, None) {
                     Err(e) => {
                         eprintln!(
-                            "Failed to load property sheet for injection string '{}': {}",
-                            string, e
+                            "Failed to load property sheet for injection string '{string}': {e}",
                         );
                         None
                     }
@@ -736,9 +735,9 @@ impl Loader {
         impl PathsJSON {
             fn into_vec(self) -> Option<Vec<String>> {
                 match self {
-                    PathsJSON::Empty => None,
-                    PathsJSON::Single(s) => Some(vec![s]),
-                    PathsJSON::Multiple(s) => Some(s),
+                    Self::Empty => None,
+                    Self::Single(s) => Some(vec![s]),
+                    Self::Multiple(s) => Some(s),
                 }
             }
         }
@@ -780,7 +779,7 @@ impl Loader {
 
         let initial_language_configuration_count = self.language_configurations.len();
 
-        if let Ok(package_json_contents) = fs::read_to_string(&parser_path.join("package.json")) {
+        if let Ok(package_json_contents) = fs::read_to_string(parser_path.join("package.json")) {
             let package_json = serde_json::from_str::<PackageJSON>(&package_json_contents);
             if let Ok(package_json) = package_json {
                 let language_count = self.languages_by_id.len();
@@ -940,6 +939,7 @@ impl Loader {
         *self.wasm_store.lock().unwrap() = Some(tree_sitter::WasmStore::new(engine).unwrap())
     }
 
+    #[must_use]
     pub fn get_scanner_path(&self, src_path: &Path) -> Option<PathBuf> {
         let mut path = src_path.join("scanner.c");
         for extension in ["c", "cc", "cpp"] {
@@ -1058,11 +1058,12 @@ impl<'a> LanguageConfiguration<'a> {
                     if self.use_all_highlight_names {
                         for capture_name in result.query.capture_names() {
                             if !all_highlight_names.iter().any(|x| x == capture_name) {
-                                all_highlight_names.push(capture_name.to_string());
+                                all_highlight_names.push((*capture_name).to_string());
                             }
                         }
                     }
                     result.configure(all_highlight_names.as_slice());
+                    drop(all_highlight_names);
                     Ok(Some(result))
                 }
             })
@@ -1117,15 +1118,16 @@ impl<'a> LanguageConfiguration<'a> {
         let (path, range) = ranges
             .iter()
             .find(|(_, range)| range.contains(&offset_within_section))
-            .unwrap_or(ranges.last().unwrap());
+            .unwrap_or_else(|| ranges.last().unwrap());
         error.offset = offset_within_section - range.start;
         error.row = source[range.start..offset_within_section]
             .chars()
             .filter(|c| *c == '\n')
             .count();
-        Error::from(error).context(format!("Error in query file {:?}", path))
+        Error::from(error).context(format!("Error in query file {path:?}"))
     }
 
+    #[allow(clippy::type_complexity)]
     fn read_queries(
         &self,
         paths: Option<&[String]>,
@@ -1138,7 +1140,7 @@ impl<'a> LanguageConfiguration<'a> {
                 let abs_path = self.root_path.join(path);
                 let prev_query_len = query.len();
                 query += &fs::read_to_string(&abs_path)
-                    .with_context(|| format!("Failed to read query file {:?}", path))?;
+                    .with_context(|| format!("Failed to read query file {path:?}"))?;
                 path_ranges.push((path.clone(), prev_query_len..query.len()));
             }
         } else {
@@ -1146,7 +1148,7 @@ impl<'a> LanguageConfiguration<'a> {
             let path = queries_path.join(default_path);
             if path.exists() {
                 query = fs::read_to_string(&path)
-                    .with_context(|| format!("Failed to read query file {:?}", path))?;
+                    .with_context(|| format!("Failed to read query file {path:?}"))?;
                 path_ranges.push((default_path.to_string(), 0..query.len()));
             }
         }
