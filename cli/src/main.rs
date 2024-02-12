@@ -568,6 +568,7 @@ fn run() -> Result<()> {
                 highlighter.parser = parser;
                 test_highlight::test_highlights(
                     &loader,
+                    &config.get()?,
                     &mut highlighter,
                     &test_highlight_dir,
                     test_options.apply_all_captures,
@@ -579,7 +580,7 @@ fn run() -> Result<()> {
             if test_tag_dir.is_dir() {
                 let mut tags_context = TagsContext::new();
                 tags_context.parser = parser;
-                test_tags::test_tags(&loader, &mut tags_context, &test_tag_dir)?;
+                test_tags::test_tags(&loader, &config.get()?, &mut tags_context, &test_tag_dir)?;
             }
         }
 
@@ -655,7 +656,7 @@ fn run() -> Result<()> {
                         if let Some(v) = loader.language_configuration_for_file_name(path)? {
                             v
                         } else {
-                            eprintln!("No language found for path {path:?}");
+                            eprintln!("{}", util::lang_not_found_for_path(path, &loader_config));
                             continue;
                         }
                     }
@@ -737,6 +738,7 @@ fn run() -> Result<()> {
             let paths = collect_paths(tags_options.paths_file.as_deref(), tags_options.paths)?;
             tags::generate_tags(
                 &loader,
+                &config.get()?,
                 tags_options.scope.as_deref(),
                 &paths,
                 tags_options.quiet,
