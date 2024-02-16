@@ -788,7 +788,6 @@ impl Loader {
     pub fn highlight_config_for_injection_string<'a>(
         &'a self,
         string: &str,
-        apply_all_captures: bool,
     ) -> Option<&'a HighlightConfiguration> {
         match self.language_configuration_for_injection_string(string) {
             Err(e) => {
@@ -797,7 +796,7 @@ impl Loader {
             }
             Ok(None) => None,
             Ok(Some((language, configuration))) => {
-                match configuration.highlight_config(language, apply_all_captures, None) {
+                match configuration.highlight_config(language, None) {
                     Err(e) => {
                         eprintln!(
                             "Failed to load property sheet for injection string '{string}': {e}",
@@ -1060,7 +1059,6 @@ impl<'a> LanguageConfiguration<'a> {
     pub fn highlight_config(
         &self,
         language: Language,
-        apply_all_captures: bool,
         paths: Option<&[String]>,
     ) -> Result<Option<&HighlightConfiguration>> {
         let (highlights_filenames, injections_filenames, locals_filenames) = match paths {
@@ -1125,7 +1123,6 @@ impl<'a> LanguageConfiguration<'a> {
                         &highlights_query,
                         &injections_query,
                         &locals_query,
-                        apply_all_captures,
                     )
                     .map_err(|error| match error.kind {
                         QueryErrorKind::Language => Error::from(error),
