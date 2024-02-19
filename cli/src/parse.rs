@@ -208,7 +208,7 @@ pub fn parse_file_at_path(parser: &mut Parser, opts: &ParseFileOptions) -> Resul
             let mut indent_level = 0;
             let mut did_visit_children = false;
             let mut had_named_children = false;
-            let mut tags: Vec<&str> = Vec::new();
+            let mut tags = Vec::<&str>::new();
             writeln!(&mut stdout, "<?xml version=\"1.0\"?>")?;
             loop {
                 let node = cursor.node();
@@ -308,7 +308,8 @@ pub fn parse_file_at_path(parser: &mut Parser, opts: &ParseFileOptions) -> Resul
                 if node.is_error() || node.is_missing() {
                     first_error = Some(node);
                     break;
-                } else if !cursor.goto_first_child() {
+                }
+                if !cursor.goto_first_child() {
                     break;
                 }
             } else if !cursor.goto_next_sibling() {
@@ -355,7 +356,9 @@ pub fn parse_file_at_path(parser: &mut Parser, opts: &ParseFileOptions) -> Resul
             bytes: source_code.len(),
             duration: Some(duration),
         });
-    } else if opts.print_time {
+    }
+
+    if opts.print_time {
         let duration = time.elapsed();
         let duration_ms = duration.as_micros() as f64 / 1e3;
         writeln!(

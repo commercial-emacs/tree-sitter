@@ -412,7 +412,7 @@ impl Loader {
         let mut paths_to_check = vec![parser_path.clone()];
 
         if let Some(scanner_path) = scanner_path.as_ref() {
-            paths_to_check.push(scanner_path.to_path_buf());
+            paths_to_check.push(scanner_path.clone());
         }
 
         paths_to_check.extend(
@@ -510,8 +510,8 @@ impl Loader {
         let library = unsafe { Library::new(&library_path) }
             .with_context(|| format!("Error opening dynamic library {library_path:?}"))?;
         let language = unsafe {
-            let language_fn: Symbol<unsafe extern "C" fn() -> Language> = library
-                .get(language_fn_name.as_bytes())
+            let language_fn = library
+                .get::<Symbol<unsafe extern "C" fn() -> Language>>(language_fn_name.as_bytes())
                 .with_context(|| format!("Failed to load symbol {language_fn_name}"))?;
             language_fn()
         };
