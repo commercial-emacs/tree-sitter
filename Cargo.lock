@@ -1276,7 +1276,7 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
-version = "0.20.10"
+version = "0.20.11"
 dependencies = [
  "bindgen",
  "cc",
@@ -1366,8 +1366,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tree-sitter",
- "tree-sitter-highlight",
- "tree-sitter-tags",
  "which 6.0.0",
 ]
 
