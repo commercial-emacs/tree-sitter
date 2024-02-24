@@ -1,5 +1,6 @@
 [package]
 name = "tree-sitter-cli"
+version.workspace = true
 description = "CLI tool for developing, testing, and using Tree-sitter parsers"
 version = "0.20.8-alpha"
 authors = ["Max Brunsfeld <maxbrunsfeld@gmail.com>"]
