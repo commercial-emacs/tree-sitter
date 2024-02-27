@@ -25,7 +25,9 @@ endif
 OBJ := $(SRC:.c=.o)
 
 # define default flags, and override to append mandatory flags
-override CFLAGS := -O3 -std=gnu11 -fPIC -fvisibility=hidden -Wall -Wextra -Wshadow -pedantic $(CFLAGS)
+ARFLAGS := rcs
+CFLAGS := -O3 -Wall -Wextra -Wshadow -pedantic
+override CFLAGS += -std=c11 -fPIC -fvisibility=hidden
 override CFLAGS += -Ilib/src -Ilib/src/wasm -Ilib/include
 
 # workaround cflags for old gcc versions
@@ -35,11 +37,13 @@ override CFLAGS += -Wno-format-truncation
 endif
 
 # ABI versioning
-SONAME_MAJOR := 0
-SONAME_MINOR := 0
+SONAME_MAJOR := $(word 1,$(subst ., ,$(VERSION)))
+SONAME_MINOR := $(word 2,$(subst ., ,$(VERSION)))
 
 # OS-specific bits
-ifeq ($(shell uname),Darwin)
+ifeq ($(OS),Windows_NT)
+	$(error "Windows is not supported")
+else ifeq ($(shell uname),Darwin)
 	SOEXT = dylib
 	SOEXTVER_MAJOR = $(SONAME_MAJOR).dylib
 	SOEXTVER = $(SONAME_MAJOR).$(SONAME_MINOR).dylib
@@ -50,7 +54,7 @@ else
 	SOEXTVER = so.$(SONAME_MAJOR).$(SONAME_MINOR)
 	LINKSHARED += -shared -Wl,-soname,libtree-sitter.$(SOEXT).$(SONAME_MAJOR)
 endif
-ifneq (,$(filter $(shell uname),FreeBSD NetBSD DragonFly))
+ifneq ($(filter $(shell uname),FreeBSD NetBSD DragonFly),)
 	PCLIBDIR := $(PREFIX)/libdata/pkgconfig
 endif
 
@@ -60,10 +64,8 @@ all: libtree-sitter.$(SOEXTVER)
 target/release/libtree_sitter_highlight.$(SOEXT): highlight/src/lib.rs highlight/src/c_lib.rs lib/binding_rust/lib.rs
 	( cd highlight ; cargo build --release )
 
-libtree-sitter.$(SOEXTVER): $(OBJ)
+libtree-sitter.$(SOEXT): $(OBJ)
 	$(CC) $(LDFLAGS) $(LINKSHARED) $^ $(LDLIBS) -o $@
-	ln -sf $@ libtree-sitter.$(SOEXT)
-	ln -sf $@ libtree-sitter.$(SOEXTVER_MAJOR)
 ifneq ($(STRIP),)
 	$(STRIP) $@
 endif
@@ -90,8 +92,8 @@ install-ci: all install-highlight
 	ln -sf libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXTVER_MAJOR)
 	ln -sf libtree-sitter.$(SOEXTVER) '$(DESTDIR)$(LIBDIR)'/libtree-sitter.$(SOEXT)
 
-	install -d '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter
-	install -m644 lib/include/tree_sitter/api.h '$(DESTDIR)$(INCLUDEDIR)'/tree_sitter/
+clean:
+	$(RM) $(OBJ) tree-sitter.pc libtree-sitter.a libtree-sitter.$(SOEXT)
 
 	install -d '$(DESTDIR)$(PCLIBDIR)'
 	sed -e 's|@LIBDIR@|$(LIBDIR)|;s|@INCLUDEDIR@|$(INCLUDEDIR)|;s|@VERSION@|$(VERSION)|' \

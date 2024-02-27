@@ -594,7 +594,7 @@ impl Loader {
 
             if let Some(scanner_path) = scanner_path.as_ref() {
                 if scanner_path.extension() == Some("c".as_ref()) {
-                    command.arg("-xc").arg("-std=c99").arg(scanner_path);
+                    command.arg("-xc").arg("-std=c11").arg(scanner_path);
                 } else {
                     eprintln!("Warning: Using a C++ scanner is now deprecated. Please migrate your scanner code to C, as C++ support will be removed in the near future.");
                     command.arg(scanner_path);
@@ -610,7 +610,7 @@ impl Loader {
         // Always use the same allocator in the CLI as any scanner, useful for debugging and
         // tracking memory leaks in tests.
         #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-        command.arg("-DTS_REUSE_ALLOCATOR");
+        command.arg("-DTREE_SITTER_REUSE_ALLOCATOR");
 
         let output = command.output().with_context(|| {
             format!("Failed to execute the C compiler with the following command:\n{command:?}")
