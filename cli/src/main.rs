@@ -549,18 +549,16 @@ fn run() -> Result<()> {
             }
 
             let languages = loader.languages_at_path(&current_dir)?;
-            let language = languages
+            let language = &languages
                 .first()
-                .ok_or_else(|| anyhow!("No language found"))?;
+                .ok_or_else(|| anyhow!("No language found"))?
+                .0;
             parser.set_language(language)?;
 
             let test_dir = current_dir.join("test");
 
-            // Run the corpus tests. Look for them at two paths: `test/corpus` and `corpus`.
-            let mut test_corpus_dir = test_dir.join("corpus");
-            if !test_corpus_dir.is_dir() {
-                test_corpus_dir = current_dir.join("corpus");
-            }
+            // Run the corpus tests. Look for them in `test/corpus`.
+            let test_corpus_dir = test_dir.join("corpus");
             if test_corpus_dir.is_dir() {
                 let mut opts = TestOptions {
                     path: test_corpus_dir,
@@ -571,6 +569,7 @@ fn run() -> Result<()> {
                     exclude: test_options.exclude,
                     update: test_options.update,
                     open_log: test_options.open_log,
+                    languages: languages.iter().map(|(l, n)| (n.as_str(), l)).collect(),
                 };
 
                 test::run_tests_at_path(&mut parser, &mut opts)?;

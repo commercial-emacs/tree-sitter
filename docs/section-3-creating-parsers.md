@@ -152,7 +152,7 @@ If there is an ambiguity or *local ambiguity* in your grammar, Tree-sitter will 
 
 The `tree-sitter test` command allows you to easily test that your parser is working correctly.
 
-For each rule that you add to the grammar, you should first create a *test* that describes how the syntax trees should look when parsing that rule. These tests are written using specially-formatted text files in the `corpus/` or `test/corpus/` directories within your parser's root folder.
+For each rule that you add to the grammar, you should first create a *test* that describes how the syntax trees should look when parsing that rule. These tests are written using specially-formatted text files in the `test/corpus/` directory within your parser's root folder.
 
 For example, you might have a file called `test/corpus/statements.txt` that contains a series of entries like this:
 
@@ -214,13 +214,73 @@ increment(n) == n + 1
 
 These tests are important. They serve as the parser's API documentation, and they can be run every time you change the grammar to verify that everything still parses correctly.
 
-By default, the `tree-sitter test` command runs all of the tests in your `corpus` or `test/corpus/` folder. To run a particular test, you can use the `-f` flag:
+By default, the `tree-sitter test` command runs all of the tests in your `test/corpus/` folder. To run a particular test, you can use the `-f` flag:
 
 ```sh
 tree-sitter test -f 'Return statements'
 ```
 
-The recommendation is to be comprehensive in adding tests. If it's a visible node, add it to a test file in your `corpus` directory. It's typically a good idea to test all of the permutations of each language construct. This increases test coverage, but doubly acquaints readers with a way to examine expected outputs and understand the "edges" of a language.
+The recommendation is to be comprehensive in adding tests. If it's a visible node, add it to a test file in your `test/corpus` directory. It's typically a good idea to test all of the permutations of each language construct. This increases test coverage, but doubly acquaints readers with a way to examine expected outputs and understand the "edges" of a language.
+
+#### Attributes
+
+Tests can be annotated with a few `attributes`. Attributes must be put in the header, below the test name, and start with a `:`.
+A couple of attributes also take in a parameter, which require the use of parenthesis.
+
+**Note**: If you'd like to supply in multiple parameters, e.g. to run tests on multiple platforms or to test multiple languages, you can repeat the attribute on a new line.
+
+The following attributes are available:
+
+- `:skip` — This attribute will skip the test when running `tree-sitter test`.
+  This is useful when you want to temporarily disable running a test without deleting it.
+- `:error` — This attribute will assert that the parse tree contains an error. It's useful to just validate that a certain input is invalid without displaying the whole parse tree, as such you should omit the parse tree below the `---` line.
+- `:fail-fast` — This attribute will stop the testing additional tests if the test marked with this attribute fails.
+- `:language(LANG)` — This attribute will run the tests using the parser for the specified language. This is useful for multi-parser repos, such as XML and DTD, or Typescript and TSX. The default parser will be the first entry in the `tree-sitter` field in the root `package.json`, so having a way to pick a second or even third parser is useful.
+- `:platform(PLATFORM)` — This attribute specifies the platform on which the test should run. It is useful to test platform-specific behavior (e.g. Windows newlines are different from Unix). This attribute must match up with Rust's [`std::env::consts::OS`](https://doc.rust-lang.org/std/env/consts/constant.OS.html).
+
+Examples using attributes:
+
+```text
+=========================
+Test that will be skipped
+:skip
+=========================
+
+int main() {}
+
+-------------------------
+
+====================================
+Test that will run on Linux or macOS
+
+:platform(linux)
+:platform(macos)
+====================================
+
+int main() {}
+
+------------------------------------
+
+========================================================================
+Test that expects an error, and will fail fast if there's no parse error
+:fail-fast
+:error
+========================================================================
+
+int main ( {}
+
+------------------------------------------------------------------------
+
+=================================================
+Test that will parse with both Typescript and TSX
+:language(typescript)
+:language(tsx)
+=================================================
+
+console.log('Hello, world!');
+
+-------------------------------------------------
+```
 
 #### Automatic Compilation
 
@@ -419,7 +479,7 @@ With this structure in place, you can now freely decide what part of the grammar
 
 After developing the *type* sublanguage a bit further, you might decide to switch to working on *statements* or *expressions* instead. It's often useful to check your progress by trying to parse some real code using `tree-sitter parse`.
 
-**And remember to add tests for each rule in your `corpus` folder!**
+**And remember to add tests for each rule in your `test/corpus` folder!**
 
 ### Structuring Rules Well
 
