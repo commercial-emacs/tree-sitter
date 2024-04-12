@@ -133,11 +133,12 @@ pub struct CompileConfig<'a> {
 }
 
 impl<'a> CompileConfig<'a> {
+    #[must_use]
     pub fn new(
         src_path: &'a Path,
         externals: Option<&'a [PathBuf]>,
         output_path: Option<PathBuf>,
-    ) -> CompileConfig<'a> {
+    ) -> Self {
         Self {
             src_path,
             header_paths: vec![src_path],
@@ -452,7 +453,7 @@ impl Loader {
         let parser_path = config.src_path.join("parser.c");
         config.scanner_path = self.get_scanner_path(config.src_path);
 
-        let mut paths_to_check = vec![parser_path.clone()];
+        let mut paths_to_check = vec![parser_path];
 
         if let Some(scanner_path) = config.scanner_path.as_ref() {
             paths_to_check.push(scanner_path.clone());
@@ -491,7 +492,9 @@ impl Loader {
         }
 
         let lock_path = if env::var("CROSS_RUNNER").is_ok() {
-            PathBuf::from("/tmp")
+            tempfile::tempdir()
+                .unwrap()
+                .path()
                 .join("tree-sitter")
                 .join("lock")
                 .join(format!("{}.lock", config.name))
@@ -506,7 +509,8 @@ impl Loader {
         if let Ok(lock_file) = fs::OpenOptions::new().write(true).open(&lock_path) {
             recompile = false;
             if lock_file.try_lock_exclusive().is_err() {
-                // if we can't acquire the lock, another process is compiling the parser, wait for it and don't recompile
+                // if we can't acquire the lock, another process is compiling the parser, wait for
+                // it and don't recompile
                 lock_file.lock_exclusive()?;
                 recompile = false;
             } else {
@@ -1023,7 +1027,7 @@ impl Loader {
                         language_name: grammar_json.name.clone(),
                         scope: config_json.scope,
                         language_id,
-                        file_types: config_json.file_types.unwrap_or(Vec::new()),
+                        file_types: config_json.file_types.unwrap_or_default(),
                         content_regex: Self::regex(config_json.content_regex.as_deref()),
                         first_line_regex: Self::regex(config_json.first_line_regex.as_deref()),
                         injection_regex: Self::regex(config_json.injection_regex.as_deref()),
@@ -1050,8 +1054,11 @@ impl Loader {
                             .push(self.language_configurations.len());
                     }
 
-                    self.language_configurations
-                        .push(unsafe { mem::transmute(configuration) });
+                    self.language_configurations.push(unsafe {
+                        mem::transmute::<LanguageConfiguration<'_>, LanguageConfiguration<'static>>(
+                            configuration,
+                        )
+                    });
 
                     if set_current_path_config
                         && self.language_configuration_in_current_path.is_none()
@@ -1090,8 +1097,11 @@ impl Loader {
                 highlight_names: &self.highlight_names,
                 use_all_highlight_names: self.use_all_highlight_names,
             };
-            self.language_configurations
-                .push(unsafe { mem::transmute(configuration) });
+            self.language_configurations.push(unsafe {
+                mem::transmute::<LanguageConfiguration<'_>, LanguageConfiguration<'static>>(
+                    configuration,
+                )
+            });
             self.languages_by_id
                 .push((parser_path.to_owned(), OnceCell::new(), None));
         }
@@ -1332,8 +1342,7 @@ impl<'a> LanguageConfiguration<'a> {
             .unwrap_or_else(|| ranges.last().unwrap());
         error.offset = offset_within_section - range.start;
         error.row = source[range.start..offset_within_section]
-            .chars()
-            .filter(|c| *c == '\n')
+            .matches(|c| c == '\n')
             .count();
         Error::from(error).context(format!("Error in query file {path:?}"))
     }
